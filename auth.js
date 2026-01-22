@@ -103,15 +103,13 @@ function isValidSession() {
         return false;
     }
     
-    // Check with server if token is still valid (optional)
     return true;
 }
 
 /**
  * Create new session
  */
-function createSession(username) {
-    const token = generateToken();
+function createSession(username, token) {
     const expiry = Date.now() + (60 * 60 * 1000); // 1 hour
     
     ADMIN.token = token;
@@ -135,8 +133,15 @@ function createSession(username) {
 function clearSession() {
     // Clear server-side session
     if (ADMIN.token) {
-        fetch(`${ADMIN.backendUrl}?action=logout&token=${encodeURIComponent(ADMIN.token)}`)
-            .catch(() => {});
+        const formData = new URLSearchParams();
+        formData.append('action', 'logout');
+        formData.append('token', ADMIN.token);
+        
+        fetch(`${ADMIN.backendUrl}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        }).catch(() => {}); // Ignore errors
     }
     
     // Clear local data
@@ -225,21 +230,31 @@ async function handleLogin(event) {
     adminDom.loginBtn.disabled = true;
     
     try {
+        // Use URLSearchParams instead of JSON (matching tester)
+        const formData = new URLSearchParams();
+        formData.append('action', 'login');
+        formData.append('username', username);
+        formData.append('password', password);
+        
+        console.log('Sending login request to:', ADMIN.backendUrl);
+        console.log('Login data:', { username, password });
+        
         const response = await fetch(ADMIN.backendUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'login',
-                username: username,
-                password: password
-            })
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData.toString()
         });
         
+        console.log('Login response status:', response.status);
+        
         const result = await response.json();
+        console.log('Login response data:', result);
         
         if (result.success && result.token) {
             // Create session
-            createSession(username);
+            createSession(username, result.token);
             
             // Show success message
             showMessage(adminDom.loginStatus, 
@@ -543,7 +558,7 @@ async function handleFileUpload(event) {
         // Read file as base64
         const base64Data = await readFileAsBase64(file);
         
-        // Prepare payload
+        // Prepare payload - Use JSON for file uploads (matching backend expectations)
         const payload = {
             action: 'upload',
             token: ADMIN.token,
@@ -676,7 +691,7 @@ async function handlePdfGeneration(event) {
     adminDom.generateSubmit.disabled = true;
     
     try {
-        // Prepare payload
+        // Prepare payload - Use JSON for PDF generation
         const payload = {
             action: 'generatePdf',
             token: ADMIN.token,
@@ -819,13 +834,6 @@ function switchTab(tabId) {
 }
 
 // ==================== UTILITY FUNCTIONS ====================
-
-/**
- * Generate random token
- */
-function generateToken() {
-    return 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-}
 
 /**
  * Read file as base64
