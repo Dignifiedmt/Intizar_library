@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intizar Backend Tester</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f7f4;
+            color: #0b3d2e;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(11, 61, 46, 0.1);
+        }
+        
+        h1 {
+            color: #0b3d2e;
+            border-bottom: 3px solid #c99a6b;
+            padding-bottom: 10px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+            display: block;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+            display: block;
+        }
+        
+        .url-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            word-break: break-all;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        
+        .btn {
+            background: #13614a;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 5px 10px 0;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: #0b3d2e;
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: #c99a6b;
+        }
+        
+        .btn-secondary:hover {
+            background: #b88a5b;
+        }
+        
+        .test-section {
+            margin: 25px 0;
+            padding: 20px;
+            border: 2px solid #e0eee8;
+            border-radius: 8px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #13614a;
+        }
+        
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(19, 97, 74, 0.3);
+            border-radius: 50%;
+            border-top-color: #13614a;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: 600;
+            color: #13614a;
+        }
+        
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e6e3;
+            border-radius: 6px;
+            font-size: 16px;
+            font-family: inherit;
+            margin-bottom: 10px;
+        }
+        
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #13614a;
+        }
+        
+        .instructions {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #2e7d32;
+            margin: 20px 0;
+        }
+        
+        .instructions ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Intizar Digital Library - Backend Tester</h1>
+        
+        <div class="instructions">
+            <h3>📋 How to Use This Tester:</h3>
+            <ul>
+                <li>Enter your Google Apps Script Web App URL below</li>
+                <li>Click "Test Health" to check if backend is online</li>
+                <li>Test individual endpoints one by one</li>
+                <li>Check browser Console (F12) for detailed logs</li>
+            </ul>
+        </div>
+        
+        <div class="url-section">
+            <label class="label">Backend URL:</label>
+            <input type="text" id="backendUrl" placeholder="Paste your Apps Script Web App URL here..." 
+                   value="https://script.google.com/macros/s/AKfycbwFelKUQ_Tpli9uZYqt50UZcQfQy73rwSlBNze3_p5Fu-WCyIMlGS4YoQ-19bvT5K72CQ/exec">
+            <p style="color: #666; font-size: 14px; margin-top: 5px;">
+                This should be the URL you got when you deployed as a Web App (ends with /exec)
+            </p>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <!-- Connection Test -->
+        <div class="test-section">
+            <h3>🔗 Connection Test</h3>
+            <button class="btn" id="testHealth">Test Health Check</button>
+            <button class="btn btn-secondary" id="testAll">Test All Endpoints</button>
+            
+            <div id="healthResult" class="result" style="display: none;">
+                <!-- Results will appear here -->
+            </div>
+        </div>
+        
+        <!-- Get Documents Test -->
+        <div class="test-section">
+            <h3>📚 Library Data Test</h3>
+            <button class="btn" id="testGetDocuments">Get Documents from Library</button>
+            
+            <div id="documentsResult" class="result" style="display: none;">
+                <!-- Results will appear here -->
+            </div>
+        </div>
+        
+        <!-- AI Test -->
+        <div class="test-section">
+            <h3>🤖 AI Assistant Test</h3>
+            <label class="label">Question about Mahdawiyyah:</label>
+            <input type="text" id="aiQuestion" placeholder="Ask about Imam Mahdi, Intizar, Mahdawiyyah..." 
+                   value="Who is Imam Mahdi?">
+            <button class="btn" id="testAI">Test AI Response</button>
+            
+            <div id="aiResult" class="result" style="display: none;">
+                <!-- Results will appear here -->
+            </div>
+        </div>
+        
+        <!-- Admin Login Test -->
+        <div class="test-section">
+            <h3>🔐 Admin Authentication Test</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label class="label">Username:</label>
+                    <input type="text" id="username" placeholder="Admin username" value="Intizar Library">
+                </div>
+                <div>
+                    <label class="label">Password:</label>
+                    <input type="password" id="password" placeholder="Admin password" value="IntizarulMahdi">
+                </div>
+            </div>
+            <button class="btn" id="testLogin">Test Admin Login</button>
+            <button class="btn btn-secondary" id="testLogout" style="display: none;">Test Logout</button>
+            
+            <div id="loginResult" class="result" style="display: none;">
+                <!-- Results will appear here -->
+            </div>
+        </div>
+        
+        <!-- Manual URL Builder -->
+        <div class="test-section">
+            <h3>🔍 Manual URL Testing</h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <strong>Health Check:</strong><br>
+                <span id="healthUrl" class="url-display"></span>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <strong>Get Documents:</strong><br>
+                <span id="documentsUrl" class="url-display"></span>
+            </div>
+            
+            <p style="color: #666; font-size: 14px;">
+                Copy and paste these URLs directly into your browser to test manually.
+            </p>
+        </div>
+        
+        <!-- Test Summary -->
+        <div class="test-section" id="summarySection" style="display: none;">
+            <h3>📊 Test Summary</h3>
+            <div id="testSummary" class="result">
+                <!-- Summary will appear here -->
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0eee8; text-align: center;">
+            <p style="color: #666;">Intizar Digital Library Backend Tester</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const elements = {
+            backendUrl: document.getElementById('backendUrl'),
+            status: document.getElementById('status'),
+            
+            // Buttons
+            testHealth: document.getElementById('testHealth'),
+            testAll: document.getElementById('testAll'),
+            testGetDocuments: document.getElementById('testGetDocuments'),
+            testAI: document.getElementById('testAI'),
+            testLogin: document.getElementById('testLogin'),
+            testLogout: document.getElementById('testLogout'),
+            
+            // Inputs
+            aiQuestion: document.getElementById('aiQuestion'),
+            username: document.getElementById('username'),
+            password: document.getElementById('password'),
+            
+            // Results containers
+            healthResult: document.getElementById('healthResult'),
+            documentsResult: document.getElementById('documentsResult'),
+            aiResult: document.getElementById('aiResult'),
+            loginResult: document.getElementById('loginResult'),
+            testSummary: document.getElementById('testSummary'),
+            summarySection: document.getElementById('summarySection'),
+            
+            // URL displays
+            healthUrl: document.getElementById('healthUrl'),
+            documentsUrl: document.getElementById('documentsUrl')
+        };
+
+        // State
+        let adminToken = localStorage.getItem('admin_token') || null;
+        let testResults = {
+            health: null,
+            documents: null,
+            ai: null,
+            login: null
+        };
+
+        // Initialize
+        function init() {
+            updateManualUrls();
+            checkStoredToken();
+            
+            // Event listeners
+            elements.testHealth.addEventListener('click', testHealthCheck);
+            elements.testAll.addEventListener('click', testAllEndpoints);
+            elements.testGetDocuments.addEventListener('click', testGetDocuments);
+            elements.testAI.addEventListener('click', testAIRequest);
+            elements.testLogin.addEventListener('click', testAdminLogin);
+            elements.testLogout.addEventListener('click', testAdminLogout);
+            elements.backendUrl.addEventListener('input', updateManualUrls);
+            
+            // Check if we have a token on load
+            if (adminToken) {
+                showStatus('✅ Using stored admin token', 'success');
+                elements.testLogout.style.display = 'inline-block';
+            }
+        }
+
+        // Update manual test URLs
+        function updateManualUrls() {
+            const baseUrl = elements.backendUrl.value.trim();
+            elements.healthUrl.textContent = `${baseUrl}?action=health`;
+            elements.documentsUrl.textContent = `${baseUrl}?action=getDocuments`;
+        }
+
+        // Check for stored token
+        function checkStoredToken() {
+            if (adminToken) {
+                elements.testLogout.style.display = 'inline-block';
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            elements.status.textContent = message;
+            elements.status.className = `status ${type}`;
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    elements.status.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Show result in a container
+        function showResult(container, data, title) {
+            container.style.display = 'block';
+            const formattedData = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+            container.innerHTML = `<strong>${title}:</strong>\n${formattedData}`;
+            console.log(`${title}:`, data);
+        }
+
+        // Show loading on button
+        function showLoading(button, text = 'Testing...') {
+            const original = button.innerHTML;
+            button.innerHTML = `<span class="loading"></span>${text}`;
+            button.disabled = true;
+            return original;
+        }
+
+        // Hide loading on button
+        function hideLoading(button, original) {
+            button.innerHTML = original;
+            button.disabled = false;
+        }
+
+        // Test health check endpoint
+        async function testHealthCheck() {
+            const button = elements.testHealth;
+            const original = showLoading(button, 'Checking...');
+            
+            const baseUrl = elements.backendUrl.value.trim();
+            if (!baseUrl) {
+                showStatus('❌ Please enter a backend URL', 'error');
+                hideLoading(button, original);
+                return;
+            }
+
+            try {
+                const url = `${baseUrl}?action=health`;
+                console.log('Testing URL:', url);
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    testResults.health = '✅ PASS';
+                    showResult(elements.healthResult, data, 'Health Check Result');
+                    showStatus('✅ Backend is online and healthy!', 'success');
+                } else {
+                    testResults.health = '❌ FAIL';
+                    showResult(elements.healthResult, data, 'Health Check Error');
+                    showStatus('❌ Backend health check failed', 'error');
+                }
+            } catch (error) {
+                testResults.health = '❌ ERROR';
+                showResult(elements.healthResult, error.message, 'Connection Error');
+                showStatus(`❌ Connection failed: ${error.message}`, 'error');
+                console.error('Health check error:', error);
+            } finally {
+                hideLoading(button, original);
+                updateSummary();
+            }
+        }
+
+        // Test get documents endpoint
+        async function testGetDocuments() {
+            const button = elements.testGetDocuments;
+            const original = showLoading(button, 'Fetching...');
+            
+            const baseUrl = elements.backendUrl.value.trim();
+
+            try {
+                const url = `${baseUrl}?action=getDocuments`;
+                console.log('Testing URL:', url);
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    testResults.documents = '✅ PASS';
+                    const count = data.documents ? data.documents.length : 0;
+                    const result = {
+                        status: 'Success',
+                        documentCount: count,
+                        sample: data.documents ? data.documents.slice(0, 2) : []
+                    };
+                    showResult(elements.documentsResult, result, 'Documents Result');
+                    showStatus(`✅ Retrieved ${count} documents from library`, 'success');
+                } else {
+                    testResults.documents = '❌ FAIL';
+                    showResult(elements.documentsResult, data, 'Documents Error');
+                    showStatus('❌ Failed to get documents', 'error');
+                }
+            } catch (error) {
+                testResults.documents = '❌ ERROR';
+                showResult(elements.documentsResult, error.message, 'Connection Error');
+                showStatus(`❌ Failed to get documents: ${error.message}`, 'error');
+                console.error('Get documents error:', error);
+            } finally {
+                hideLoading(button, original);
+                updateSummary();
+            }
+        }
+
+        // Test AI endpoint
+        async function testAIRequest() {
+            const button = elements.testAI;
+            const original = showLoading(button, 'Asking AI...');
+            
+            const baseUrl = elements.backendUrl.value.trim();
+            const question = elements.aiQuestion.value.trim();
+
+            if (!question) {
+                showStatus('❌ Please enter a question for the AI', 'error');
+                hideLoading(button, original);
+                return;
+            }
+
+            try {
+                const url = `${baseUrl}`;
+                console.log('Testing AI with question:', question);
+                
+                const formData = new URLSearchParams();
+                formData.append('action', 'ai');
+                formData.append('input', question);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    testResults.ai = '✅ PASS';
+                    const result = {
+                        question: question,
+                        response: data.response,
+                        length: data.response ? data.response.length : 0
+                    };
+                    showResult(elements.aiResult, result, 'AI Response');
+                    showStatus('✅ AI responded successfully', 'success');
+                } else {
+                    testResults.ai = '❌ FAIL';
+                    showResult(elements.aiResult, data, 'AI Error');
+                    showStatus('❌ AI request failed', 'error');
+                }
+            } catch (error) {
+                testResults.ai = '❌ ERROR';
+                showResult(elements.aiResult, error.message, 'Connection Error');
+                showStatus(`❌ AI request failed: ${error.message}`, 'error');
+                console.error('AI request error:', error);
+            } finally {
+                hideLoading(button, original);
+                updateSummary();
+            }
+        }
+
+        // Test admin login
+        async function testAdminLogin() {
+            const button = elements.testLogin;
+            const original = showLoading(button, 'Logging in...');
+            
+            const baseUrl = elements.backendUrl.value.trim();
+            const username = elements.username.value.trim();
+            const password = elements.password.value.trim();
+
+            if (!username || !password) {
+                showStatus('❌ Please enter both username and password', 'error');
+                hideLoading(button, original);
+                return;
+            }
+
+            try {
+                const url = `${baseUrl}`;
+                console.log('Testing login with:', username);
+                
+                const formData = new URLSearchParams();
+                formData.append('action', 'login');
+                formData.append('username', username);
+                formData.append('password', password);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    testResults.login = '✅ PASS';
+                    adminToken = data.token;
+                    localStorage.setItem('admin_token', adminToken);
+                    
+                    const result = {
+                        status: 'Login successful',
+                        token: data.token.substring(0, 20) + '...',
+                        expiresIn: data.expiresIn || 'Unknown'
+                    };
+                    showResult(elements.loginResult, result, 'Login Result');
+                    showStatus('✅ Admin login successful! Token saved.', 'success');
+                    
+                    // Show logout button
+                    elements.testLogout.style.display = 'inline-block';
+                } else {
+                    testResults.login = '❌ FAIL';
+                    showResult(elements.loginResult, data, 'Login Error');
+                    showStatus(`❌ Login failed: ${data.error || 'Invalid credentials'}`, 'error');
+                }
+            } catch (error) {
+                testResults.login = '❌ ERROR';
+                showResult(elements.loginResult, error.message, 'Connection Error');
+                showStatus(`❌ Login failed: ${error.message}`, 'error');
+                console.error('Login error:', error);
+            } finally {
+                hideLoading(button, original);
+                updateSummary();
+            }
+        }
+
+        // Test admin logout
+        async function testAdminLogout() {
+            if (!adminToken) {
+                showStatus('❌ No active session to logout', 'error');
+                return;
+            }
+
+            const baseUrl = elements.backendUrl.value.trim();
+            
+            try {
+                const url = `${baseUrl}?action=logout&token=${encodeURIComponent(adminToken)}`;
+                console.log('Testing logout');
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('✅ Logout successful', 'success');
+                    
+                    // Clear token
+                    adminToken = null;
+                    localStorage.removeItem('admin_token');
+                    elements.testLogout.style.display = 'none';
+                    
+                    showResult(elements.loginResult, data, 'Logout Result');
+                } else {
+                    showStatus('❌ Logout failed', 'error');
+                    showResult(elements.loginResult, data, 'Logout Error');
+                }
+            } catch (error) {
+                showStatus(`❌ Logout failed: ${error.message}`, 'error');
+                console.error('Logout error:', error);
+            }
+        }
+
+        // Test all endpoints
+        async function testAllEndpoints() {
+            showStatus('🔍 Starting comprehensive tests...', 'success');
+            
+            // Run tests in sequence
+            await testHealthCheck();
+            await testGetDocuments();
+            await testAIRequest();
+            
+            // Only test login if credentials are provided
+            if (elements.username.value.trim() && elements.password.value.trim()) {
+                await testAdminLogin();
+            }
+            
+            showStatus('✅ All tests completed! Check results below.', 'success');
+        }
+
+        // Update test summary
+        function updateSummary() {
+            let summary = 'Test Results:\n\n';
+            
+            summary += `Health Check: ${testResults.health || 'Not tested'}\n`;
+            summary += `Get Documents: ${testResults.documents || 'Not tested'}\n`;
+            summary += `AI Request: ${testResults.ai || 'Not tested'}\n`;
+            summary += `Admin Login: ${testResults.login || 'Not tested'}\n`;
+            
+            // Show summary section if we have any results
+            if (Object.values(testResults).some(result => result)) {
+                elements.summarySection.style.display = 'block';
+                elements.testSummary.textContent = summary;
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

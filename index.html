@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intizar Digital Library</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header with Hamburger Menu -->
+    <header>
+        <div class="container header-container">
+            <div class="logo-section">
+                <img src="logo.png" alt="Intizarul Imamul Muntazar Logo" class="logo">
+                <div>
+                    <h1>Intizar Digital Library</h1>
+                    <p class="tagline">Scholarly resources on Mahdawiyyah</p>
+                </div>
+            </div>
+            
+            <!-- Desktop Navigation -->
+            <nav class="desktop-nav">
+                <a href="#" class="nav-link" data-page="home">Home</a>
+                <a href="#" class="nav-link" data-page="library">Library</a>
+                <a href="#" class="nav-link" data-page="about">About</a>
+                <a href="admin.html" class="nav-link">Admin</a>
+            </nav>
+            
+            <!-- Hamburger Menu Button -->
+            <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+        </div>
+        
+        <!-- Mobile Navigation Menu -->
+        <div class="mobile-nav" id="mobile-nav">
+            <div class="mobile-nav-header">
+                <h3>Menu</h3>
+                <button class="close-menu" id="close-menu">&times;</button>
+            </div>
+            <div class="mobile-nav-links">
+                <a href="#" class="mobile-nav-link" data-page="home">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="#" class="mobile-nav-link" data-page="library">
+                    <i class="fas fa-book"></i> Library
+                </a>
+                <a href="#" class="mobile-nav-link" data-page="about">
+                    <i class="fas fa-info-circle"></i> About
+                </a>
+                <a href="admin.html" class="mobile-nav-link">
+                    <i class="fas fa-cogs"></i> Admin
+                </a>
+                <a href="#" class="mobile-nav-link ai-mobile-btn">
+                    <i class="fas fa-robot"></i> Ask AI Assistant
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Home Page -->
+    <div id="home-page" class="page active">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container hero-container">
+                <div class="hero-text">
+                    <h2>Welcome to the Digital Library of Intizarul Imamul Muntazar</h2>
+                    <p>Access scholarly works, publications, and resources on the teachings of Imam Mahdi (AJF) and the Mahdawiyyah movement.</p>
+                    <a href="#" class="hero-btn" data-page="library">Browse Full Library <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="hero-images">
+                    <img src="imam-mahdi.jpg" alt="Imam Mahdi (AJF)" class="hero-img">
+                    <img src="sayyid-zakzaky.jpg" alt="Sayyid Zakzaky" class="hero-img">
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Documents -->
+        <main class="container">
+            <section class="featured-section">
+                <h2><i class="fas fa-star"></i> Featured Documents</h2>
+                <p class="section-subtitle">Recently added scholarly works</p>
+                
+                <div class="document-grid" id="featured-documents">
+                    <!-- Featured documents will be loaded here -->
+                </div>
+                
+                <div class="view-all-container">
+                    <a href="#" class="view-all-btn" data-page="library">
+                        View All Documents <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Default Documents Section -->
+            <section class="default-documents">
+                <h3><i class="fas fa-archive"></i> Core Collection</h3>
+                <p class="section-subtitle">Essential reading materials included with the library</p>
+                
+                <div class="document-grid">
+                    <!-- Default Document 1 -->
+                    <div class="document-card">
+                        <div class="doc-icon"><i class="fas fa-file-pdf"></i></div>
+                        <div class="doc-info">
+                            <h4>Introduction to Mahdawiyyah</h4>
+                            <p class="doc-meta">Author: Intizar Research Team</p>
+                            <p class="doc-description">A comprehensive introduction to the concept of Mahdawiyyah and its significance.</p>
+                        </div>
+                        <div class="doc-actions">
+                            <a href="intizar1.pdf" target="_blank" class="doc-btn">Read PDF</a>
+                            <a href="intizar1.pdf" download class="doc-btn secondary">Download</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Default Document 2 -->
+                    <div class="document-card">
+                        <div class="doc-icon"><i class="fas fa-file-pdf"></i></div>
+                        <div class="doc-info">
+                            <h4>The Concept of Intizar</h4>
+                            <p class="doc-meta">Author: Intizar Research Team</p>
+                            <p class="doc-description">Exploring the theological and practical aspects of awaiting Imam Mahdi (AJF).</p>
+                        </div>
+                        <div class="doc-actions">
+                            <a href="intizar2.pdf" target="_blank" class="doc-btn">Read PDF</a>
+                            <a href="intizar2.pdf" download class="doc-btn secondary">Download</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Default Document 3 -->
+                    <div class="document-card">
+                        <div class="doc-icon"><i class="fas fa-file-pdf"></i></div>
+                        <div class="doc-info">
+                            <h4>Imam Mahdi in Classical Texts</h4>
+                            <p class="doc-meta">Author: Intizar Research Team</p>
+                            <p class="doc-description">References and analysis from classical Islamic literature.</p>
+                        </div>
+                        <div class="doc-actions">
+                            <a href="intizar3.pdf" target="_blank" class="doc-btn">Read PDF</a>
+                            <a href="intizar3.pdf" download class="doc-btn secondary">Download</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Library Page (Without Hero) -->
+    <div id="library-page" class="page">
+        <main class="container library-page-container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1><i class="fas fa-book-open"></i> Digital Library</h1>
+                <p class="page-subtitle">Browse all available documents and resources</p>
+            </div>
+
+            <!-- Controls -->
+            <div class="library-controls">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search documents by title, author, or keywords...">
+                </div>
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="type-filter">Document Type:</label>
+                        <select id="type-filter">
+                            <option value="all">All Types</option>
+                            <option value="PDF">PDF</option>
+                            <option value="DOCX">DOCX</option>
+                            <option value="Generated PDF">Generated PDF</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="sort-filter">Sort by:</label>
+                        <select id="sort-filter">
+                            <option value="date-desc">Newest First</option>
+                            <option value="date-asc">Oldest First</option>
+                            <option value="title">Title A-Z</option>
+                            <option value="author">Author A-Z</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Library Stats -->
+            <div class="library-stats">
+                <div class="stat-card">
+                    <i class="fas fa-file-pdf"></i>
+                    <div>
+                        <h3 id="total-docs">0</h3>
+                        <p>Total Documents</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-clock"></i>
+                    <div>
+                        <h3 id="recent-docs">0</h3>
+                        <p>Added This Month</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-download"></i>
+                    <div>
+                        <h3 id="available-docs">5</h3>
+                        <p>Always Available</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Grid -->
+            <div class="document-grid" id="library-documents">
+                <!-- Documents will be loaded here -->
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading-indicator" class="loading-indicator">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading documents...</p>
+            </div>
+
+            <!-- Default Documents Section -->
+            <section class="default-library-section">
+                <h2><i class="fas fa-archive"></i> Permanent Collection</h2>
+                <p class="section-subtitle">Core documents included with the application</p>
+                
+                <div class="default-library-grid">
+                    <!-- Default Document 1 -->
+                    <div class="library-card">
+                        <div class="card-header">
+                            <i class="fas fa-file-pdf pdf-icon"></i>
+                            <span class="doc-badge">Core Document</span>
+                        </div>
+                        <div class="card-body">
+                            <h4>Introduction to Mahdawiyyah</h4>
+                            <p class="card-author">Intizar Research Team</p>
+                            <p class="card-excerpt">Essential reading for understanding the Mahdawiyyah doctrine.</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="intizar1.pdf" target="_blank" class="card-btn">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="intizar1.pdf" download class="card-btn download">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Default Document 2 -->
+                    <div class="library-card">
+                        <div class="card-header">
+                            <i class="fas fa-file-pdf pdf-icon"></i>
+                            <span class="doc-badge">Core Document</span>
+                        </div>
+                        <div class="card-body">
+                            <h4>The Concept of Intizar</h4>
+                            <p class="card-author">Intizar Research Team</p>
+                            <p class="card-excerpt">Theological exploration of awaiting Imam Mahdi (AJF).</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="intizar2.pdf" target="_blank" class="card-btn">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="intizar2.pdf" download class="card-btn download">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Default Document 3 -->
+                    <div class="library-card">
+                        <div class="card-header">
+                            <i class="fas fa-file-pdf pdf-icon"></i>
+                            <span class="doc-badge">Core Document</span>
+                        </div>
+                        <div class="card-body">
+                            <h4>Imam Mahdi in Classical Texts</h4>
+                            <p class="card-author">Intizar Research Team</p>
+                            <p class="card-excerpt">References from classical Islamic literature.</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="intizar3.pdf" target="_blank" class="card-btn">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="intizar3.pdf" download class="card-btn download">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Default Document 4 -->
+                    <div class="library-card">
+                        <div class="card-header">
+                            <i class="fas fa-file-pdf pdf-icon"></i>
+                            <span class="doc-badge">Core Document</span>
+                        </div>
+                        <div class="card-body">
+                            <h4>Sayyid Zakzaky's Teachings</h4>
+                            <p class="card-author">Intizar Research Team</p>
+                            <p class="card-excerpt">Contemporary perspectives on Mahdawiyyah.</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="intizar4.pdf" target="_blank" class="card-btn">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="intizar4.pdf" download class="card-btn download">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Default Document 5 -->
+                    <div class="library-card">
+                        <div class="card-header">
+                            <i class="fas fa-file-pdf pdf-icon"></i>
+                            <span class="doc-badge">Core Document</span>
+                        </div>
+                        <div class="card-body">
+                            <h4>Mahdawiyyah Q&A</h4>
+                            <p class="card-author">Intizar Research Team</p>
+                            <p class="card-excerpt">Frequently asked questions and answers.</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="intizar5.pdf" target="_blank" class="card-btn">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="intizar5.pdf" download class="card-btn download">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- About Page -->
+    <div id="about-page" class="page">
+        <main class="container about-container">
+            <div class="about-header">
+                <h1><i class="fas fa-info-circle"></i> About This Library</h1>
+                <p class="about-subtitle">Preserving and disseminating Mahdawiyyah knowledge</p>
+            </div>
+            
+            <div class="about-content">
+                <div class="about-image-section">
+                    <img src="logo.png" alt="Intizarul Imamul Muntazar Logo" class="about-main-logo">
+                    <div class="about-image-grid">
+                        <img src="imam-mahdi.jpg" alt="Imam Mahdi (AJF)" class="about-img">
+                        <img src="sayyid-zakzaky.jpg" alt="Sayyid Zakzaky" class="about-img">
+                    </div>
+                </div>
+                
+                <div class="about-text-section">
+                    <div class="about-card">
+                        <h2><i class="fas fa-book"></i> Our Mission</h2>
+                        <p>This digital library is maintained by <strong>Intizarul Imamul Muntazar</strong>, dedicated to preserving and disseminating authentic resources on the Mahdawiyyah doctrine.</p>
+                        <p>Our mission is to provide free access to scholarly works, publications, and educational materials related to the awaited Imam Mahdi (AJF) and the contemporary Mahdawiyyah movement.</p>
+                    </div>
+                    
+                    <div class="about-card">
+                        <h2><i class="fas fa-graduation-cap"></i> Collection Scope</h2>
+                        <p>The library features:</p>
+                        <ul class="about-list">
+                            <li><i class="fas fa-check-circle"></i> Classical texts on Imam Mahdi (AJF)</li>
+                            <li><i class="fas fa-check-circle"></i> Contemporary analyses and research</li>
+                            <li><i class="fas fa-check-circle"></i> Publications by Intizarul Imamul Muntazar</li>
+                            <li><i class="fas fa-check-circle"></i> Educational resources for students</li>
+                            <li><i class="fas fa-check-circle"></i> Multimedia materials and lectures</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="about-card">
+                        <h2><i class="fas fa-robot"></i> AI Assistant</h2>
+                        <p>Our Mahdawiyyah AI Assistant is specifically configured to answer questions related to:</p>
+                        <div class="ai-topics">
+                            <span class="topic-tag">Imam Mahdi (AJF)</span>
+                            <span class="topic-tag">The Concept of Intizar</span>
+                            <span class="topic-tag">Mahdawiyyah Doctrine</span>
+                            <span class="topic-tag">Contemporary Movement</span>
+                            <span class="topic-tag">Sayyid Zakzaky's Teachings</span>
+                        </div>
+                        <p class="ai-note"><i class="fas fa-info-circle"></i> The assistant only responds to Mahdawiyyah-related questions. All conversations are stateless and not stored.</p>
+                    </div>
+                    
+                    <div class="about-card copyright-card">
+                        <h2><i class="fas fa-copyright"></i> Copyright Information</h2>
+                        <p>All materials in this library are provided for educational and research purposes.</p>
+                        <p><strong>Copyright © 1447 AH / 2026 CE Intizarul Imamul Muntazar.</strong></p>
+                        <p>All rights reserved. Unauthorized reproduction or distribution is prohibited.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- AI Assistant Button (Global) -->
+    <button id="ai-button" class="ai-button" aria-label="Ask AI Assistant">
+        <i class="fas fa-robot"></i> <span class="ai-text">Ask AI</span>
+    </button>
+
+    <!-- AI Modal (Global) -->
+    <div id="ai-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-robot"></i> Mahdawiyyah AI Assistant</h3>
+                <button id="close-ai" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="chat-container">
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="message ai-message">
+                            <div class="message-header">
+                                <i class="fas fa-robot"></i>
+                                <span>Mahdawiyyah Assistant</span>
+                            </div>
+                            <p>Assalamu alaikum. I am an AI assistant specialized in Mahdawiyyah teachings. Ask me about Imam Mahdi (AJF), the concept of Intizar, or related topics.</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <div class="input-wrapper">
+                            <textarea id="user-input" placeholder="Ask your question in any language (Arabic, Hausa, English, etc.)..." rows="3"></textarea>
+                            <div class="input-actions">
+                                <button id="clear-chat" class="action-btn" title="Clear conversation">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button id="send-ai" class="send-btn">
+                                    Send <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ai-notice">
+                        <i class="fas fa-info-circle"></i>
+                        <p>This assistant only answers Mahdawiyyah-related questions. Conversations are not stored.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-container">
+            <div class="footer-section">
+                <img src="logo.png" alt="Logo" class="footer-logo">
+                <div>
+                    <h3>Intizar Digital Library</h3>
+                    <p>Scholarly resources on Mahdawiyyah</p>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <div class="footer-links">
+                    <a href="#" data-page="home">Home</a>
+                    <a href="#" data-page="library">Library</a>
+                    <a href="#" data-page="about">About</a>
+                    <a href="admin.html">Admin</a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p><i class="fas fa-envelope"></i> info@intizar.org</p>
+                <p><i class="fas fa-copyright"></i> 1447 AH / 2026 CE</p>
+                <p class="footer-note">Intizarul Imamul Muntazar</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright © 1447 AH / 2026 CE Intizarul Imamul Muntazar. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
