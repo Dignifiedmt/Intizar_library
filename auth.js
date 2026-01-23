@@ -1,6 +1,6 @@
 /**
  * Intizar Digital Library - Admin Authentication & Management
- * CORRECTED VERSION - Proper login with error handling
+ * CORRECTED VERSION - Complete and working
  */
 
 // Configuration - MUST UPDATE WITH YOUR URL!
@@ -19,7 +19,11 @@ const ADMIN = {
     isLoading: false
 };
 
-// Initialize when page loads
+// DOM Elements Storage
+const adminDom = {};
+
+// ==================== INITIALIZATION ====================
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Admin panel initializing...');
     
@@ -41,22 +45,33 @@ document.addEventListener('DOMContentLoaded', function() {
 // ==================== ELEMENT LOADING ====================
 
 function loadElements() {
-    // Try to get elements, but don't crash if they don't exist
-    try {
-        adminDom.loginScreen = document.getElementById('login-screen');
-        adminDom.dashboard = document.getElementById('dashboard');
-        adminDom.loginForm = document.getElementById('login-form');
-        adminDom.usernameInput = document.getElementById('username');
-        adminDom.passwordInput = document.getElementById('password');
-        adminDom.loginBtn = document.getElementById('login-btn');
-        adminDom.loginStatus = document.getElementById('login-status');
-        adminDom.logoutBtn = document.getElementById('logout-btn');
-        adminDom.adminName = document.getElementById('admin-name');
-        
-        console.log('Elements loaded successfully');
-    } catch (e) {
-        console.error('Error loading elements:', e);
-    }
+    // Main containers
+    adminDom.loginScreen = document.getElementById('login-screen');
+    adminDom.dashboard = document.getElementById('dashboard');
+    
+    // Login elements
+    adminDom.loginForm = document.getElementById('login-form');
+    adminDom.usernameInput = document.getElementById('username');
+    adminDom.passwordInput = document.getElementById('password');
+    adminDom.loginBtn = document.getElementById('login-btn');
+    adminDom.loginStatus = document.getElementById('login-status');
+    
+    // Dashboard elements
+    adminDom.logoutBtn = document.getElementById('logout-btn');
+    adminDom.adminName = document.getElementById('admin-name');
+    adminDom.statTotal = document.getElementById('stat-total');
+    adminDom.statPdf = document.getElementById('stat-pdf');
+    adminDom.statDocx = document.getElementById('stat-docx');
+    adminDom.statGenerated = document.getElementById('stat-generated');
+    adminDom.dashboardStatus = document.getElementById('dashboard-status');
+    
+    // Form elements
+    adminDom.uploadForm = document.getElementById('upload-form');
+    adminDom.generateForm = document.getElementById('generate-form');
+    adminDom.documentsList = document.getElementById('documents-list');
+    adminDom.searchDocs = document.getElementById('search-docs');
+    
+    console.log('Elements loaded successfully');
 }
 
 // ==================== SESSION MANAGEMENT ====================
@@ -128,7 +143,7 @@ async function handleLogin(event) {
     try {
         console.log('🔄 Attempting login for:', username);
         
-        // Prepare form data - FIXED FORMAT
+        // Prepare form data
         const formData = new URLSearchParams();
         formData.append('action', 'login');
         formData.append('username', username);
@@ -141,8 +156,7 @@ async function handleLogin(event) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: formData,
-            mode: 'no-cors' // Remove this if you get CORS errors
+            body: formData
         });
         
         // Check if response is okay
@@ -277,6 +291,7 @@ async function loadDocuments() {
         
         if (result.success && result.documents) {
             renderDocuments(result.documents);
+            updateStatsFromDocuments(result.documents);
             showNotification(`Loaded ${result.documents.length} documents`, 'success');
         } else {
             throw new Error(result.error || 'Failed to load documents');
@@ -300,6 +315,32 @@ async function loadDocuments() {
             `;
         }
     }
+}
+
+function updateStatsFromDocuments(documents) {
+    if (!documents) return;
+    
+    const stats = {
+        total: documents.length,
+        pdf: documents.filter(doc => doc.Type === 'PDF').length,
+        docx: documents.filter(doc => doc.Type === 'DOCX').length,
+        generated: documents.filter(doc => doc.Type === 'Generated PDF').length
+    };
+    
+    // Update DOM elements
+    if (adminDom.statTotal) adminDom.statTotal.textContent = stats.total;
+    if (adminDom.statPdf) adminDom.statPdf.textContent = stats.pdf;
+    if (adminDom.statDocx) adminDom.statDocx.textContent = stats.docx;
+    if (adminDom.statGenerated) adminDom.statGenerated.textContent = stats.generated;
+}
+
+function updateStats() {
+    // This function is called when we don't have documents yet
+    // Set all to 0 initially
+    if (adminDom.statTotal) adminDom.statTotal.textContent = '0';
+    if (adminDom.statPdf) adminDom.statPdf.textContent = '0';
+    if (adminDom.statDocx) adminDom.statDocx.textContent = '0';
+    if (adminDom.statGenerated) adminDom.statGenerated.textContent = '0';
 }
 
 // ==================== UI MANAGEMENT ====================
@@ -331,6 +372,9 @@ function showDashboard() {
     }
     
     document.title = 'Admin Dashboard - Intizar Library';
+    
+    // Set first tab as active
+    switchTab('upload');
 }
 
 function showLoading(isLoading, type = 'general') {
@@ -345,6 +389,28 @@ function showLoading(isLoading, type = 'general') {
             adminDom.loginBtn.disabled = false;
         }
     }
+}
+
+// ==================== TAB MANAGEMENT ====================
+
+function switchTab(tabId) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(tab => {
+        if (tab.dataset.tab === tabId) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        if (content.id === `tab-${tabId}`) {
+            content.classList.add('active');
+        } else {
+            content.classList.remove('active');
+        }
+    });
 }
 
 // ==================== NOTIFICATION SYSTEM ====================
@@ -421,7 +487,7 @@ function initEventListeners() {
         adminDom.logoutBtn.addEventListener('click', handleLogout);
     }
     
-    // Tabs (if they exist)
+    // Tabs
     const tabs = document.querySelectorAll('.tab-btn');
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -436,6 +502,36 @@ function initEventListeners() {
         refreshBtn.addEventListener('click', () => {
             showNotification('Refreshing document list...', 'info');
             loadDocuments();
+        });
+    }
+    
+    // Form reset buttons
+    const uploadResetBtn = document.getElementById('upload-reset');
+    if (uploadResetBtn) {
+        uploadResetBtn.addEventListener('click', () => {
+            if (adminDom.uploadForm) {
+                adminDom.uploadForm.reset();
+                showNotification('Form cleared', 'info');
+            }
+        });
+    }
+    
+    // File preview for upload
+    const uploadFileInput = document.getElementById('upload-file');
+    if (uploadFileInput) {
+        uploadFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const preview = document.getElementById('file-preview');
+                const fileName = document.getElementById('file-name');
+                const fileSize = document.getElementById('file-size');
+                
+                if (preview && fileName && fileSize) {
+                    preview.classList.remove('hidden');
+                    fileName.textContent = file.name;
+                    fileSize.textContent = `${(file.size / 1024).toFixed(2)} KB`;
+                }
+            }
         });
     }
     
@@ -508,22 +604,6 @@ function renderDocuments(documents) {
     adminDom.documentsList.innerHTML = html;
 }
 
-function updateStats() {
-    // This would update statistics - implement based on your needs
-    const stats = {
-        total: 0,
-        pdf: 0,
-        docx: 0,
-        generated: 0
-    };
-    
-    // Update DOM elements if they exist
-    if (adminDom.statTotal) adminDom.statTotal.textContent = stats.total;
-    if (adminDom.statPdf) adminDom.statPdf.textContent = stats.pdf;
-    if (adminDom.statDocx) adminDom.statDocx.textContent = stats.docx;
-    if (adminDom.statGenerated) adminDom.statGenerated.textContent = stats.generated;
-}
-
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -533,7 +613,11 @@ function escapeHtml(text) {
 // ==================== CSS FOR NOTIFICATIONS & LOADING ====================
 
 function addStyles() {
+    // Check if styles are already added
+    if (document.getElementById('admin-dynamic-styles')) return;
+    
     const style = document.createElement('style');
+    style.id = 'admin-dynamic-styles';
     style.textContent = `
         /* Loading spinner */
         .loading-spinner {
@@ -641,6 +725,40 @@ function addStyles() {
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+        
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Action buttons in table */
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        
+        .action-btn.view {
+            background: #f0f7f4;
+            color: var(--primary-dark);
+        }
+        
+        .action-btn.download {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
         }
     `;
     document.head.appendChild(style);
