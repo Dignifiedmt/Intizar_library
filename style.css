@@ -853,7 +853,7 @@ header {
     display: inline;
 }
 
-/* AI Modal - Enhanced from First and Second Code */
+/* AI Modal - UPDATED FOR 90vh HEIGHT */
 .modal {
     position: fixed;
     top: 0;
@@ -872,8 +872,9 @@ header {
     background: var(--white);
     border-radius: var(--radius);
     width: 100%;
-    max-width: 700px;
-    max-height: 90vh;
+    max-width: 800px;
+    height: 90vh; /* Changed from max-height to height */
+    min-height: 90vh; /* Added for minimum height */
     display: flex;
     flex-direction: column;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
@@ -887,6 +888,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .modal-header h3 {
@@ -915,12 +917,15 @@ header {
     padding: 1.5rem;
     flex: 1;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .chat-container {
     display: flex;
     flex-direction: column;
-    height: 500px;
+    height: 100%; /* Changed from fixed height to 100% */
+    min-height: 0; /* Important for flex child to respect parent constraints */
 }
 
 .chat-messages {
@@ -930,6 +935,7 @@ header {
     background: #f8f9fa;
     border-radius: var(--radius);
     margin-bottom: 1rem;
+    min-height: 0; /* Important for proper scrolling */
 }
 
 .message {
@@ -971,6 +977,7 @@ header {
 .chat-input-container {
     display: flex;
     gap: 10px;
+    flex-shrink: 0; /* Prevent input from shrinking */
 }
 
 #user-input {
@@ -981,6 +988,7 @@ header {
     font-family: inherit;
     font-size: 1rem;
     resize: none;
+    min-height: 56px; /* Ensure consistent height */
 }
 
 .send-btn {
@@ -995,6 +1003,7 @@ header {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-height: 56px; /* Match input height */
 }
 
 .send-btn:hover {
@@ -1006,6 +1015,7 @@ header {
     justify-content: space-between;
     align-items: center;
     margin-top: 10px;
+    flex-shrink: 0; /* Prevent actions from shrinking */
 }
 
 .action-btn {
@@ -1028,6 +1038,7 @@ header {
     text-align: center;
     margin-top: 1rem;
     font-style: italic;
+    flex-shrink: 0; /* Prevent notice from shrinking */
 }
 
 /* Footer - Enhanced from First and Second Code */
@@ -1325,11 +1336,12 @@ footer {
     
     .modal-content {
         margin: 10px;
-        max-height: 95vh;
+        height: 95vh; /* Increased for mobile */
+        min-height: 95vh;
     }
     
     .chat-container {
-        height: 400px;
+        height: 100%;
     }
     
     .dashboard-grid {
