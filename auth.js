@@ -1,12 +1,12 @@
 /**
  * Intizar Digital Library - Admin Authentication & Management
- * COMPLETE VERSION - With Upload and Generate PDF Support
+ * UPDATED VERSION - Using application/x-www-form-urlencoded format
  */
 
-// Configuration - MUST UPDATE WITH YOUR URL!
+// Configuration - UPDATED WITH NEW URL!
 const ADMIN = {
-    // 🔽 REPLACE WITH YOUR ACTUAL URL (ends with /exec)
-    backendUrl: 'https://script.google.com/macros/s/AKfycbwFelKUQ_Tpli9uZYqt50UZcQfQy73rwSlBNze3_p5Fu-WCyIMlGS4YoQ-19bvT5K72CQ/exec',
+    // ✅ UPDATED BACKEND URL
+    backendUrl: 'https://script.google.com/macros/s/AKfycbz2dF94BG1FTjuczsspNjLuwl0Sa0Qsew5mwsJ3f0_4gGEsk_FqbRiLXjiQhTgafTw6Ng/exec',
     
     // Session management
     token: localStorage.getItem('admin_token') || null,
@@ -276,27 +276,25 @@ async function handleUpload(event) {
         // Convert file to base64
         const base64 = await fileToBase64(file);
         
-        // Prepare upload data
-        const uploadData = {
-            action: 'upload',
-            token: ADMIN.token,
-            fileName: file.name,
-            mimeType: file.type,
-            fileBase64: base64.split(',')[1], // Remove data URL prefix
-            metadata: {
-                title: title,
-                author: author
-            }
-        };
+        // ✅ UPDATED: Prepare form data using URLSearchParams (not JSON)
+        const formData = new URLSearchParams();
+        formData.append('action', 'upload');
+        formData.append('token', ADMIN.token);
+        formData.append('fileName', file.name);
+        formData.append('mimeType', file.type);
+        formData.append('fileBase64', base64.split(',')[1]); // Remove data URL prefix
+        formData.append('title', title);
+        formData.append('author', author);
         
-        console.log('Sending upload request...');
+        console.log('Sending upload request (form-urlencoded)...');
         
+        // ✅ UPDATED: Send as application/x-www-form-urlencoded
         const response = await fetch(ADMIN.backendUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: JSON.stringify(uploadData)
+            body: formData
         });
         
         const result = await response.json();
@@ -376,25 +374,23 @@ async function handleGeneratePDF(event) {
     try {
         console.log('📄 Generating PDF:', title);
         
-        // Prepare generate data
-        const generateData = {
-            action: 'generatePdf',
-            token: ADMIN.token,
-            formData: {
-                title: title,
-                author: author,
-                body: content
-            }
-        };
+        // ✅ UPDATED: Prepare form data using URLSearchParams (not JSON)
+        const formData = new URLSearchParams();
+        formData.append('action', 'generatePdf');
+        formData.append('token', ADMIN.token);
+        formData.append('title', title);
+        formData.append('author', author);
+        formData.append('content', content);
         
-        console.log('Sending generate request...');
+        console.log('Sending generate request (form-urlencoded)...');
         
+        // ✅ UPDATED: Send as application/x-www-form-urlencoded
         const response = await fetch(ADMIN.backendUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: JSON.stringify(generateData)
+            body: formData
         });
         
         const result = await response.json();
