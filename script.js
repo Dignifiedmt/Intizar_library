@@ -1,6 +1,6 @@
 // Intizar Digital Library - Enhanced Frontend Logic
 const APP = {
-    backendUrl: 'https://script.google.com/macros/s/AKfycbwFelKUQ_Tpli9uZYqt50UZcQfQy73rwSlBNze3_p5Fu-WCyIMlGS4YoQ-19bvT5K72CQ/exec', // REPLACE WITH YOUR DEPLOYED WEB APP URL
+    backendUrl: 'https://script.google.com/macros/s/AKfycbz2dF94BG1FTjuczsspNjLuwl0Sa0Qsew5mwsJ3f0_4gGEsk_FqbRiLXjiQhTgafTw6Ng/exec',
     defaultDocs: [
         { 
             id: 'default-1',
@@ -120,8 +120,10 @@ function switchPage(page) {
     // Load data for the page
     if (page === 'library') {
         loadLibraryDocuments();
+        startAutoRefresh(5); // Refresh every 5 minutes
     } else if (page === 'home') {
         loadFeaturedDocuments();
+        if (refreshInterval) clearInterval(refreshInterval);
     }
     
     // Scroll to top
@@ -171,6 +173,11 @@ function closeMobileMenu() {
 async function loadFeaturedDocuments() {
     try {
         const response = await fetch(`${APP.backendUrl}?action=getDocuments`);
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
         const result = await response.json();
         
         let documents = [];
@@ -196,6 +203,9 @@ async function loadFeaturedDocuments() {
     } catch (error) {
         console.error('Failed to load featured documents:', error);
         renderFeaturedDocuments([]);
+        
+        // Show notification
+        showNotification('Failed to load featured documents. Using offline content.', 'warning');
     }
 }
 
@@ -205,12 +215,26 @@ function renderFeaturedDocuments(docs) {
     dom.featuredDocuments.innerHTML = '';
     
     if (docs.length === 0) {
-        dom.featuredDocuments.innerHTML = `
-            <div class="no-documents">
-                <i class="fas fa-book"></i>
-                <p>No documents available yet. Check back soon!</p>
-            </div>
-        `;
+        // Show default documents when no featured ones are available
+        const defaultDocs = APP.defaultDocs.slice(0, 3);
+        defaultDocs.forEach(doc => {
+            const card = document.createElement('div');
+            card.className = 'document-card';
+            card.innerHTML = `
+                <div class="doc-icon"><i class="fas fa-file-pdf"></i></div>
+                <div class="doc-info">
+                    <h4>${doc.title}</h4>
+                    <p class="doc-meta">Author: ${doc.author} | Type: ${doc.type}</p>
+                    <p class="doc-date">${doc.date}</p>
+                    ${doc.description ? `<p class="doc-description">${doc.description}</p>` : ''}
+                </div>
+                <div class="doc-actions">
+                    <a href="${doc.url}" target="_blank" class="doc-btn">View Document</a>
+                    <a href="${doc.url}" download class="doc-btn secondary">Download</a>
+                </div>
+            `;
+            dom.featuredDocuments.appendChild(card);
+        });
         return;
     }
     
@@ -223,6 +247,7 @@ function renderFeaturedDocuments(docs) {
                 <h4>${doc.title}</h4>
                 <p class="doc-meta">Author: ${doc.author} | Type: ${doc.type}</p>
                 <p class="doc-date">Added: ${doc.date}</p>
+                ${doc.description ? `<p class="doc-description">${doc.description}</p>` : ''}
             </div>
             <div class="doc-actions">
                 <a href="${doc.url}" target="_blank" class="doc-btn">View Document</a>
@@ -237,11 +262,25 @@ function renderFeaturedDocuments(docs) {
 async function loadLibraryDocuments() {
     if (!dom.libraryDocuments) return;
     
+    // Show loading state
     dom.loadingIndicator.style.display = 'flex';
     dom.libraryDocuments.innerHTML = '';
     
+    // Add skeleton loading cards
+    for (let i = 0; i < 6; i++) {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'document-card skeleton-card';
+        dom.libraryDocuments.appendChild(skeleton);
+    }
+    
     try {
         const response = await fetch(`${APP.backendUrl}?action=getDocuments`);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server error ${response.status}: ${errorText}`);
+        }
+        
         const result = await response.json();
         
         let remoteDocs = [];
@@ -258,6 +297,7 @@ async function loadLibraryDocuments() {
                     day: 'numeric' 
                 }),
                 url: doc.DriveUrl || '#',
+                description: doc.Description || '',
                 isRemote: true,
                 isRecent: isRecentDocument(doc.DateAdded)
             }));
@@ -280,6 +320,20 @@ async function loadLibraryDocuments() {
         
     } catch (error) {
         console.error('Failed to load library documents:', error);
+        
+        // Show error message with retry option
+        dom.libraryDocuments.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Failed to load documents</h3>
+                <p>${error.message || 'Network error'}</p>
+                <button onclick="loadLibraryDocuments()" class="retry-btn">
+                    <i class="fas fa-redo"></i> Retry
+                </button>
+            </div>
+        `;
+        
+        // Fallback to default documents only
         APP.allDocuments = [...APP.defaultDocs.map(doc => ({
             ...doc,
             date: new Date(0),
@@ -361,11 +415,25 @@ function renderLibraryDocuments(docs) {
     dom.libraryDocuments.innerHTML = '';
     
     if (docs.length === 0) {
+        const hasSearch = APP.libraryFilters.search.trim() !== '';
+        const hasTypeFilter = APP.libraryFilters.type !== 'all';
+        
+        let message = 'No documents found';
+        if (hasSearch || hasTypeFilter) {
+            message += ' with current filters';
+            if (hasSearch) {
+                message += ` for "${APP.libraryFilters.search}"`;
+            }
+        }
+        
         dom.libraryDocuments.innerHTML = `
             <div class="no-results">
                 <i class="fas fa-search"></i>
-                <h3>No documents found</h3>
-                <p>Try adjusting your search or filters</p>
+                <h3>${message}</h3>
+                ${hasSearch || hasTypeFilter ? 
+                    '<button onclick="resetFilters()" class="reset-btn">Clear Filters</button>' : 
+                    '<p>Check back soon for new additions</p>'
+                }
             </div>
         `;
         return;
@@ -402,7 +470,19 @@ function renderLibraryDocuments(docs) {
     });
 }
 
-// AI Chat Functions (Global - Unchanged from previous implementation)
+function resetFilters() {
+    APP.libraryFilters.search = '';
+    APP.libraryFilters.type = 'all';
+    APP.libraryFilters.sort = 'date-desc';
+    
+    if (dom.searchInput) dom.searchInput.value = '';
+    if (dom.typeFilter) dom.typeFilter.value = 'all';
+    if (dom.sortFilter) dom.sortFilter.value = 'date-desc';
+    
+    applyLibraryFilters();
+}
+
+// AI Chat Functions
 function openAIModal() {
     dom.aiModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -441,6 +521,12 @@ function addMessage(text, isUser = false) {
 }
 
 async function sendAIQuestion() {
+    // Check network connectivity
+    if (!navigator.onLine) {
+        addMessage('You appear to be offline. Please check your connection and try again.');
+        return;
+    }
+    
     const question = dom.userInput.value.trim();
     if (!question) return;
     
@@ -451,22 +537,47 @@ async function sendAIQuestion() {
     dom.sendAI.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     
     try {
+        console.log('🤖 Sending AI question:', question.substring(0, 100));
+        
         const response = await fetch(APP.backendUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `action=ai&input=${encodeURIComponent(question)}`
         });
         
+        // Check response status
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Server error:', response.status, errorText);
+            
+            if (response.status === 401 || response.status === 403) {
+                addMessage('Session expired. Please refresh the page and try again.');
+            } else if (response.status === 429) {
+                addMessage('Too many requests. Please wait a moment before trying again.');
+            } else {
+                addMessage(`Server error (${response.status}). Please try again.`);
+            }
+            return;
+        }
+        
         const result = await response.json();
+        console.log('📥 AI response received:', result.success ? 'Success' : 'Failed');
         
         if (result.success) {
             addMessage(result.response);
         } else {
-            addMessage(`Error: ${result.error}`);
+            // Show user-friendly error
+            const errorMsg = result.error || 'AI service is currently unavailable';
+            addMessage(`Sorry, I couldn't process that request. ${errorMsg}`);
+            
+            // Suggest if question is off-topic
+            if (errorMsg.includes('not appear to be related')) {
+                addMessage('Tip: Ask about Imam Mahdi (AJF), Mahdawiyyah, Intizar (awaiting), or Sayyid Zakzaky\'s teachings.');
+            }
         }
     } catch (error) {
-        addMessage('Network error. Please check your connection.');
-        console.error('AI request failed:', error);
+        console.error('❌ Network error:', error);
+        addMessage('Network error. Please check your internet connection and try again.');
     } finally {
         dom.sendAI.disabled = false;
         dom.sendAI.innerHTML = 'Send <i class="fas fa-paper-plane"></i>';
@@ -485,8 +596,71 @@ function clearChat() {
     `;
 }
 
+// Auto-refresh functionality
+let refreshInterval;
+function startAutoRefresh(intervalMinutes = 5) {
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(() => {
+        if (APP.currentPage === 'library') {
+            console.log('🔄 Auto-refreshing library documents');
+            loadLibraryDocuments();
+        }
+    }, intervalMinutes * 60 * 1000);
+}
+
+// Backend health check
+async function checkBackendHealth() {
+    try {
+        const response = await fetch(`${APP.backendUrl}?action=health`);
+        const data = await response.json();
+        if (!data.success) {
+            console.warn('⚠️ Backend health check failed:', data);
+            showNotification('Backend service is experiencing issues', 'warning');
+        }
+    } catch (error) {
+        console.warn('⚠️ Backend health check failed:', error.message);
+    }
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotification = document.querySelector('.notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()">&times;</button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
 // Initialize Event Listeners
 function initEventListeners() {
+    // Debounced search input
+    let searchTimeout;
+    if (dom.searchInput) {
+        dom.searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                APP.libraryFilters.search = e.target.value;
+                applyLibraryFilters();
+            }, 300);
+        });
+    }
+    
     // Page Navigation
     dom.navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
@@ -532,13 +706,6 @@ function initEventListeners() {
     });
     
     // Library Page Filters
-    if (dom.searchInput) {
-        dom.searchInput.addEventListener('input', (e) => {
-            APP.libraryFilters.search = e.target.value;
-            applyLibraryFilters();
-        });
-    }
-    
     if (dom.typeFilter) {
         dom.typeFilter.addEventListener('change', (e) => {
             APP.libraryFilters.type = e.target.value;
@@ -595,19 +762,57 @@ function initEventListeners() {
             closeAIModal();
         }
     });
+    
+    // Network status listeners
+    window.addEventListener('online', () => {
+        console.log('🌐 Network connection restored');
+        showNotification('You are back online', 'success');
+        
+        if (APP.currentPage === 'library') {
+            loadLibraryDocuments();
+        } else if (APP.currentPage === 'home') {
+            loadFeaturedDocuments();
+        }
+    });
+    
+    window.addEventListener('offline', () => {
+        console.log('⚠️ Network connection lost');
+        showNotification('You are offline. Some features may not work.', 'warning');
+    });
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    initEventListeners();
+    console.log('📚 Intizar Digital Library initializing...');
     
-    // Load initial data
-    loadFeaturedDocuments();
-    
-    // Set default page
-    switchPage('home');
-    
-    console.log('Intizar Digital Library enhanced frontend loaded.');
+    try {
+        initEventListeners();
+        loadFeaturedDocuments();
+        switchPage('home');
+        
+        // Check backend health on startup
+        setTimeout(() => {
+            checkBackendHealth();
+        }, 2000);
+        
+        console.log('✅ Frontend loaded successfully.');
+        
+    } catch (error) {
+        console.error('❌ Initialization failed:', error);
+        
+        // Show user-friendly error
+        document.body.innerHTML = `
+            <div style="padding: 2rem; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                <h2 style="color: #13614a;">Loading Error</h2>
+                <p>The library failed to load. Please refresh the page.</p>
+                <button onclick="location.reload()" 
+                        style="background: #13614a; color: white; border: none; padding: 10px 20px; 
+                               border-radius: 4px; cursor: pointer; margin-top: 20px;">
+                    Refresh Page
+                </button>
+            </div>
+        `;
+    }
     
     // Add CSS for new elements
     addDynamicStyles();
@@ -686,6 +891,141 @@ function addDynamicStyles() {
             align-items: center;
             justify-content: center;
             gap: 5px;
+        }
+        
+        /* Error states */
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+            text-align: center;
+            grid-column: 1 / -1;
+        }
+        
+        .error-message i {
+            font-size: 2rem;
+            color: #dc3545;
+            margin-bottom: 1rem;
+        }
+        
+        .error-message h3 {
+            margin: 0 0 0.5rem 0;
+            color: #721c24;
+        }
+        
+        .retry-btn {
+            background: #13614a;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        
+        .retry-btn:hover {
+            background: #0b3d2e;
+        }
+        
+        .reset-btn {
+            background: #c99a6b;
+            color: #0b3d2e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        
+        .reset-btn:hover {
+            background: #d8b085;
+        }
+        
+        /* Loading skeleton */
+        .skeleton-card {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px;
+            height: 180px;
+            width: 100%;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 300px;
+            max-width: 400px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .notification-info {
+            background: #3498db;
+            border-left: 4px solid #2980b9;
+        }
+        
+        .notification-success {
+            background: #27ae60;
+            border-left: 4px solid #219653;
+        }
+        
+        .notification-warning {
+            background: #f39c12;
+            border-left: 4px solid #d68910;
+        }
+        
+        .notification-error {
+            background: #e74c3c;
+            border-left: 4px solid #c0392b;
+        }
+        
+        .notification button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-left: 1rem;
+            opacity: 0.8;
+        }
+        
+        .notification button:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
     `;
     document.head.appendChild(styles);
