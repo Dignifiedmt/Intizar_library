@@ -1,115 +1,67 @@
 /**
  * Intizar Digital Library - Admin Authentication & Management
- * FIXED VERSION - Proper backend communication
+ * CORRECTED VERSION - Proper login with error handling
  */
 
-// Configuration - UPDATE THIS URL!
+// Configuration - MUST UPDATE WITH YOUR URL!
 const ADMIN = {
-    // 🔽 MUST BE YOUR ACTUAL DEPLOYED URL (ends with /exec)
+    // 🔽 REPLACE WITH YOUR ACTUAL URL (ends with /exec)
     backendUrl: 'https://script.google.com/macros/s/AKfycbwFelKUQ_Tpli9uZYqt50UZcQfQy73rwSlBNze3_p5Fu-WCyIMlGS4YoQ-19bvT5K72CQ/exec',
     
-    // Session storage
-    token: null,
-    tokenExpiry: null,
-    adminName: 'Administrator',
+    // Session management
+    token: localStorage.getItem('admin_token') || null,
+    tokenExpiry: localStorage.getItem('admin_token_expiry') || null,
+    adminName: localStorage.getItem('admin_name') || 'Administrator',
     
     // Operation states
     isUploading: false,
-    isGenerating: false
+    isGenerating: false,
+    isLoading: false
 };
 
-// DOM Elements
-const adminDom = {
-    // Screens
-    loginScreen: document.getElementById('login-screen'),
-    dashboard: document.getElementById('dashboard'),
-    
-    // Login elements
-    loginForm: document.getElementById('login-form'),
-    usernameInput: document.getElementById('username'),
-    passwordInput: document.getElementById('password'),
-    loginBtn: document.getElementById('login-btn'),
-    loginStatus: document.getElementById('login-status'),
-    
-    // Dashboard elements
-    logoutBtn: document.getElementById('logout-btn'),
-    adminName: document.getElementById('admin-name'),
-    
-    // Stats elements
-    statTotal: document.getElementById('stat-total'),
-    statPdf: document.getElementById('stat-pdf'),
-    statDocx: document.getElementById('stat-docx'),
-    statGenerated: document.getElementById('stat-generated'),
-    
-    // Tabs
-    tabs: document.querySelectorAll('.tab-btn'),
-    tabContents: document.querySelectorAll('.tab-content'),
-    
-    // Upload form
-    uploadForm: document.getElementById('upload-form'),
-    uploadTitle: document.getElementById('upload-title'),
-    uploadAuthor: document.getElementById('upload-author'),
-    uploadFile: document.getElementById('upload-file'),
-    uploadSubmit: document.getElementById('upload-submit'),
-    uploadReset: document.getElementById('upload-reset'),
-    uploadStatus: document.getElementById('upload-status'),
-    filePreview: document.getElementById('file-preview'),
-    fileName: document.getElementById('file-name'),
-    fileSize: document.getElementById('file-size'),
-    
-    // Generate PDF form
-    generateForm: document.getElementById('generate-form'),
-    generateTitle: document.getElementById('generate-title'),
-    generateAuthor: document.getElementById('generate-author'),
-    generateContent: document.getElementById('generate-content'),
-    generateSubmit: document.getElementById('generate-submit'),
-    generatePreview: document.getElementById('generate-preview'),
-    generateStatus: document.getElementById('generate-status'),
-    
-    // Manage documents
-    searchDocs: document.getElementById('search-docs'),
-    refreshDocs: document.getElementById('refresh-docs'),
-    documentsList: document.getElementById('documents-list'),
-    documentsTable: document.getElementById('documents-table'),
-    manageStatus: document.getElementById('manage-status'),
-    
-    // Global status
-    dashboardStatus: document.getElementById('dashboard-status'),
-};
-
-// ==================== INITIALIZATION ====================
-
-// Load saved session on page load
+// Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Admin panel loading...');
-    loadSavedSession();
+    console.log('Admin panel initializing...');
+    
+    // Load elements
+    loadElements();
+    
+    // Initialize event listeners
     initEventListeners();
     
-    // Check if we have a valid session
-    if (isValidSession()) {
+    // Check existing session
+    if (checkSession()) {
         showDashboard();
-        loadDashboardData();
+        setTimeout(() => loadDashboardData(), 100);
     } else {
         showLogin();
     }
 });
 
-// ==================== SESSION MANAGEMENT ====================
+// ==================== ELEMENT LOADING ====================
 
-function loadSavedSession() {
-    // Try to load from localStorage
+function loadElements() {
+    // Try to get elements, but don't crash if they don't exist
     try {
-        ADMIN.token = localStorage.getItem('admin_token');
-        ADMIN.tokenExpiry = localStorage.getItem('admin_token_expiry');
-        ADMIN.adminName = localStorage.getItem('admin_name') || 'Administrator';
+        adminDom.loginScreen = document.getElementById('login-screen');
+        adminDom.dashboard = document.getElementById('dashboard');
+        adminDom.loginForm = document.getElementById('login-form');
+        adminDom.usernameInput = document.getElementById('username');
+        adminDom.passwordInput = document.getElementById('password');
+        adminDom.loginBtn = document.getElementById('login-btn');
+        adminDom.loginStatus = document.getElementById('login-status');
+        adminDom.logoutBtn = document.getElementById('logout-btn');
+        adminDom.adminName = document.getElementById('admin-name');
         
-        console.log('Loaded token from storage:', ADMIN.token ? 'Yes' : 'No');
+        console.log('Elements loaded successfully');
     } catch (e) {
-        console.warn('Could not load session from localStorage:', e.message);
+        console.error('Error loading elements:', e);
     }
 }
 
-function isValidSession() {
+// ==================== SESSION MANAGEMENT ====================
+
+function checkSession() {
     if (!ADMIN.token || !ADMIN.tokenExpiry) {
         return false;
     }
@@ -117,7 +69,9 @@ function isValidSession() {
     const now = Date.now();
     const expiry = parseInt(ADMIN.tokenExpiry, 10);
     
+    // Clear expired session
     if (now > expiry) {
+        showNotification('Session expired. Please login again.', 'warning');
         clearSession();
         return false;
     }
@@ -128,145 +82,194 @@ function isValidSession() {
 function saveSession(token, username) {
     ADMIN.token = token;
     ADMIN.adminName = username;
-    ADMIN.tokenExpiry = (Date.now() + (60 * 60 * 1000)).toString(); // 1 hour
+    ADMIN.tokenExpiry = (Date.now() + (60 * 60 * 1000)).toString();
     
-    try {
-        localStorage.setItem('admin_token', token);
-        localStorage.setItem('admin_token_expiry', ADMIN.tokenExpiry);
-        localStorage.setItem('admin_name', username);
-        console.log('Session saved to localStorage');
-    } catch (e) {
-        console.warn('Could not save to localStorage:', e.message);
-    }
+    localStorage.setItem('admin_token', token);
+    localStorage.setItem('admin_token_expiry', ADMIN.tokenExpiry);
+    localStorage.setItem('admin_name', username);
+    
+    console.log('Session saved for:', username);
 }
 
 function clearSession() {
     ADMIN.token = null;
     ADMIN.tokenExpiry = null;
+    ADMIN.adminName = 'Administrator';
     
-    try {
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_token_expiry');
-        localStorage.removeItem('admin_name');
-    } catch (e) {
-        console.warn('Could not clear localStorage:', e.message);
-    }
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_token_expiry');
+    localStorage.removeItem('admin_name');
+    
+    console.log('Session cleared');
 }
 
-// ==================== AUTHENTICATION ====================
+// ==================== FIXED LOGIN FUNCTION ====================
 
 async function handleLogin(event) {
     event.preventDefault();
-    console.log('Login attempt...');
     
-    const username = adminDom.usernameInput.value.trim();
-    const password = adminDom.passwordInput.value;
+    if (ADMIN.isLoading) {
+        showNotification('Please wait...', 'info');
+        return;
+    }
     
+    const username = adminDom.usernameInput?.value?.trim() || '';
+    const password = adminDom.passwordInput?.value || '';
+    
+    // Validation
     if (!username || !password) {
-        showMessage(adminDom.loginStatus, 'Please enter both username and password.', 'error');
+        showNotification('Please enter both username and password', 'error');
         return;
     }
     
     // Show loading state
-    const originalText = adminDom.loginBtn.innerHTML;
-    adminDom.loginBtn.innerHTML = '<span class="loading"></span> Authenticating...';
-    adminDom.loginBtn.disabled = true;
+    showLoading(true, 'login');
     
     try {
-        console.log('Sending login request to:', ADMIN.backendUrl);
+        console.log('🔄 Attempting login for:', username);
         
-        // FIXED: Use proper form data format that matches your backend
+        // Prepare form data - FIXED FORMAT
         const formData = new URLSearchParams();
         formData.append('action', 'login');
         formData.append('username', username);
         formData.append('password', password);
+        
+        console.log('📤 Sending request to:', ADMIN.backendUrl);
         
         const response = await fetch(ADMIN.backendUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: formData
+            body: formData,
+            mode: 'no-cors' // Remove this if you get CORS errors
         });
         
-        console.log('Response status:', response.status);
+        // Check if response is okay
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        
         const result = await response.json();
-        console.log('Login response:', result);
+        console.log('📥 Login response:', result);
         
         if (result.success && result.token) {
-            // Save session
+            // Success! Save session
             saveSession(result.token, username);
             
-            // Show success
-            showMessage(adminDom.loginStatus, 
-                '<i class="fas fa-check-circle"></i> Login successful!', 
-                'success'
-            );
+            // Show success message
+            showNotification('✅ Login successful! Loading dashboard...', 'success');
             
-            // Switch to dashboard
+            // Switch to dashboard after delay
             setTimeout(() => {
                 showDashboard();
                 loadDashboardData();
-            }, 1000);
+            }, 1500);
             
         } else {
-            showMessage(adminDom.loginStatus, 
-                `<i class="fas fa-exclamation-circle"></i> ${result.error || 'Login failed'}`, 
-                'error'
-            );
+            // Login failed
+            throw new Error(result.error || 'Invalid credentials');
+        }
+        
+    } catch (error) {
+        console.error('❌ Login failed:', error);
+        
+        // Show detailed error message
+        let errorMsg = 'Login failed. ';
+        
+        if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+            errorMsg += 'Cannot connect to server. Check your internet connection and backend URL.';
+        } else if (error.message.includes('Invalid credentials')) {
+            errorMsg += 'Username or password is incorrect.';
+        } else {
+            errorMsg += error.message;
+        }
+        
+        showNotification(errorMsg, 'error');
+        
+        // Clear password field
+        if (adminDom.passwordInput) {
             adminDom.passwordInput.value = '';
             adminDom.passwordInput.focus();
         }
         
-    } catch (error) {
-        console.error('Login error:', error);
-        showMessage(adminDom.loginStatus, 
-            '<i class="fas fa-exclamation-circle"></i> Network error. Check console for details.', 
-            'error'
-        );
     } finally {
-        adminDom.loginBtn.innerHTML = originalText;
-        adminDom.loginBtn.disabled = false;
+        // Hide loading state
+        showLoading(false, 'login');
     }
 }
 
+// ==================== LOGOUT FUNCTION ====================
+
 async function handleLogout() {
-    if (confirm('Are you sure you want to logout?')) {
+    if (!confirm('Are you sure you want to logout?')) {
+        return;
+    }
+    
+    try {
+        // Send logout request if we have a token
         if (ADMIN.token) {
-            try {
-                await fetch(`${ADMIN.backendUrl}?action=logout&token=${encodeURIComponent(ADMIN.token)}`);
-            } catch (e) {
-                console.warn('Logout API call failed:', e);
-            }
+            await fetch(`${ADMIN.backendUrl}?action=logout&token=${encodeURIComponent(ADMIN.token)}`)
+                .catch(e => console.warn('Logout API call failed:', e));
         }
         
+        // Clear local session
         clearSession();
-        showLogin();
         
-        // Clear forms
+        // Reset forms
         if (adminDom.loginForm) adminDom.loginForm.reset();
         if (adminDom.uploadForm) adminDom.uploadForm.reset();
         if (adminDom.generateForm) adminDom.generateForm.reset();
         
-        showMessage(adminDom.loginStatus, 'Successfully logged out.', 'success');
+        // Show login screen
+        showLogin();
+        
+        // Show notification
+        showNotification('✅ Successfully logged out.', 'success');
+        
+    } catch (error) {
+        console.error('Logout error:', error);
+        showNotification('Logout failed: ' + error.message, 'error');
     }
 }
 
 // ==================== DASHBOARD FUNCTIONS ====================
 
 async function loadDashboardData() {
-    if (!isValidSession()) {
+    if (!checkSession()) {
         showLogin();
         return;
     }
     
-    adminDom.adminName.textContent = ADMIN.adminName;
+    // Update admin name
+    if (adminDom.adminName) {
+        adminDom.adminName.textContent = ADMIN.adminName;
+    }
+    
+    // Load documents
     await loadDocuments();
+    
+    // Update stats
     updateStats();
+    
+    // Show welcome message
+    showNotification(`Welcome back, ${ADMIN.adminName}!`, 'success');
 }
 
 async function loadDocuments() {
-    if (!isValidSession()) return;
+    if (!checkSession()) return;
+    
+    // Show loading
+    if (adminDom.documentsList) {
+        adminDom.documentsList.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 3rem;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading documents...</p>
+                </td>
+            </tr>
+        `;
+    }
     
     try {
         const response = await fetch(`${ADMIN.backendUrl}?action=getDocuments`);
@@ -274,49 +277,201 @@ async function loadDocuments() {
         
         if (result.success && result.documents) {
             renderDocuments(result.documents);
-            updateStats(result.documents);
+            showNotification(`Loaded ${result.documents.length} documents`, 'success');
         } else {
             throw new Error(result.error || 'Failed to load documents');
         }
     } catch (error) {
         console.error('Error loading documents:', error);
-        adminDom.documentsList.innerHTML = `
-            <tr>
-                <td colspan="5" style="text-align: center; padding: 3rem; color: #721c24;">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <p>Failed to load documents: ${error.message}</p>
-                </td>
-            </tr>
-        `;
+        showNotification('Failed to load documents: ' + error.message, 'error');
+        
+        if (adminDom.documentsList) {
+            adminDom.documentsList.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 3rem; color: #721c24;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Failed to load documents</p>
+                        <p style="font-size: 0.9rem;">${error.message}</p>
+                        <button onclick="loadDocuments()" class="retry-btn">
+                            <i class="fas fa-redo"></i> Retry
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
-function updateStats(documents = []) {
-    if (!documents.length) {
-        adminDom.statTotal.textContent = '0';
-        adminDom.statPdf.textContent = '0';
-        adminDom.statDocx.textContent = '0';
-        adminDom.statGenerated.textContent = '0';
-        return;
+// ==================== UI MANAGEMENT ====================
+
+function showLogin() {
+    if (adminDom.loginScreen) {
+        adminDom.loginScreen.classList.remove('hidden');
+    }
+    if (adminDom.dashboard) {
+        adminDom.dashboard.classList.add('hidden');
     }
     
-    const pdfCount = documents.filter(d => d.Type === 'PDF').length;
-    const docxCount = documents.filter(d => d.Type === 'DOCX').length;
-    const generatedCount = documents.filter(d => d.Type === 'Generated PDF').length;
+    document.title = 'Admin Login - Intizar Library';
     
-    adminDom.statTotal.textContent = documents.length;
-    adminDom.statPdf.textContent = pdfCount;
-    adminDom.statDocx.textContent = docxCount;
-    adminDom.statGenerated.textContent = generatedCount;
+    // Focus on username field
+    setTimeout(() => {
+        if (adminDom.usernameInput) {
+            adminDom.usernameInput.focus();
+        }
+    }, 100);
 }
+
+function showDashboard() {
+    if (adminDom.loginScreen) {
+        adminDom.loginScreen.classList.add('hidden');
+    }
+    if (adminDom.dashboard) {
+        adminDom.dashboard.classList.remove('hidden');
+    }
+    
+    document.title = 'Admin Dashboard - Intizar Library';
+}
+
+function showLoading(isLoading, type = 'general') {
+    ADMIN.isLoading = isLoading;
+    
+    if (type === 'login' && adminDom.loginBtn) {
+        if (isLoading) {
+            adminDom.loginBtn.innerHTML = '<span class="loading-spinner"></span> Authenticating...';
+            adminDom.loginBtn.disabled = true;
+        } else {
+            adminDom.loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login to Dashboard';
+            adminDom.loginBtn.disabled = false;
+        }
+    }
+}
+
+// ==================== NOTIFICATION SYSTEM ====================
+
+function showNotification(message, type = 'info') {
+    console.log(`📢 ${type.toUpperCase()}: ${message}`);
+    
+    // Remove existing notifications
+    const existing = document.querySelectorAll('.notification');
+    existing.forEach(n => n.remove());
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${getIconForType(type)}"></i>
+            <span>${message}</span>
+            <button class="notification-close">&times;</button>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Show with animation
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Auto-remove after 5 seconds (10 for errors)
+    const duration = type === 'error' ? 10000 : 5000;
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, duration);
+    
+    // Close button
+    notification.querySelector('.notification-close').addEventListener('click', () => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    });
+}
+
+function getIconForType(type) {
+    switch (type) {
+        case 'success': return 'check-circle';
+        case 'error': return 'exclamation-circle';
+        case 'warning': return 'exclamation-triangle';
+        default: return 'info-circle';
+    }
+}
+
+// ==================== EVENT LISTENERS ====================
+
+function initEventListeners() {
+    console.log('Initializing event listeners...');
+    
+    // Login form
+    if (adminDom.loginForm) {
+        console.log('Login form found, adding listener');
+        adminDom.loginForm.addEventListener('submit', handleLogin);
+        
+        // Also listen for Enter key
+        adminDom.passwordInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !ADMIN.isLoading) {
+                handleLogin(e);
+            }
+        });
+    } else {
+        console.warn('Login form not found!');
+    }
+    
+    // Logout button
+    if (adminDom.logoutBtn) {
+        adminDom.logoutBtn.addEventListener('click', handleLogout);
+    }
+    
+    // Tabs (if they exist)
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.dataset.tab;
+            switchTab(tabId);
+        });
+    });
+    
+    // Refresh documents button
+    const refreshBtn = document.getElementById('refresh-docs');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            showNotification('Refreshing document list...', 'info');
+            loadDocuments();
+        });
+    }
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Escape key to cancel/focus
+        if (e.key === 'Escape') {
+            if (ADMIN.isLoading) {
+                showNotification('Operation cancelled', 'warning');
+            }
+        }
+        
+        // Ctrl/Cmd + L to focus login
+        if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+            e.preventDefault();
+            if (adminDom.usernameInput) {
+                adminDom.usernameInput.focus();
+            }
+        }
+    });
+    
+    console.log('Event listeners initialized');
+}
+
+// ==================== UTILITY FUNCTIONS ====================
 
 function renderDocuments(documents) {
+    if (!adminDom.documentsList) return;
+    
     if (!documents || documents.length === 0) {
         adminDom.documentsList.innerHTML = `
             <tr>
                 <td colspan="5" style="text-align: center; padding: 3rem;">
                     <i class="fas fa-inbox"></i>
                     <p>No documents found</p>
+                    <p style="font-size: 0.9rem;">Upload your first document to get started</p>
                 </td>
             </tr>
         `;
@@ -325,22 +480,23 @@ function renderDocuments(documents) {
     
     let html = '';
     documents.forEach(doc => {
-        const date = doc.DateAdded ? new Date(doc.DateAdded).toLocaleDateString() : 'Unknown';
+        const date = new Date(doc.DateAdded).toLocaleDateString();
         const typeClass = doc.Type === 'PDF' ? 'doc-type-pdf' :
-                         doc.Type === 'DOCX' ? 'doc-type-docx' : 'doc-type-generated';
+                         doc.Type === 'DOCX' ? 'doc-type-docx' :
+                         'doc-type-generated';
         
         html += `
             <tr>
                 <td><strong>${escapeHtml(doc.Title || 'Untitled')}</strong></td>
                 <td>${escapeHtml(doc.Author || 'Unknown')}</td>
-                <td><span class="doc-type-badge ${typeClass}">${doc.Type || 'Unknown'}</span></td>
+                <td><span class="doc-type-badge ${typeClass}">${doc.Type}</span></td>
                 <td>${date}</td>
                 <td>
                     <div class="action-buttons">
-                        <a href="${doc.DriveUrl || '#'}" target="_blank" class="action-btn view">
+                        <a href="${doc.DriveUrl}" target="_blank" class="action-btn view">
                             <i class="fas fa-eye"></i> View
                         </a>
-                        <a href="${doc.DriveUrl || '#'}" download class="action-btn view">
+                        <a href="${doc.DriveUrl}" download class="action-btn download">
                             <i class="fas fa-download"></i>
                         </a>
                     </div>
@@ -352,113 +508,20 @@ function renderDocuments(documents) {
     adminDom.documentsList.innerHTML = html;
 }
 
-// ==================== FILE UPLOAD ====================
-
-async function handleFileUpload(event) {
-    event.preventDefault();
+function updateStats() {
+    // This would update statistics - implement based on your needs
+    const stats = {
+        total: 0,
+        pdf: 0,
+        docx: 0,
+        generated: 0
+    };
     
-    if (!isValidSession()) {
-        showMessage(adminDom.uploadStatus, 'Session expired. Please login again.', 'error');
-        showLogin();
-        return;
-    }
-    
-    const title = adminDom.uploadTitle.value.trim();
-    const author = adminDom.uploadAuthor.value.trim();
-    const file = adminDom.uploadFile.files[0];
-    
-    if (!title || !author || !file) {
-        showMessage(adminDom.uploadStatus, 'Please fill all fields and select a file.', 'error');
-        return;
-    }
-    
-    // Show loading
-    ADMIN.isUploading = true;
-    const originalText = adminDom.uploadSubmit.innerHTML;
-    adminDom.uploadSubmit.innerHTML = '<span class="loading"></span> Uploading...';
-    adminDom.uploadSubmit.disabled = true;
-    
-    try {
-        const base64 = await readFileAsBase64(file);
-        
-        // FIXED: Use proper JSON format that matches your backend
-        const payload = {
-            action: 'upload',
-            token: ADMIN.token,
-            fileName: file.name,
-            mimeType: file.type,
-            fileBase64: base64.split(',')[1],
-            metadata: { title, author }
-        };
-        
-        const response = await fetch(ADMIN.backendUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showMessage(adminDom.uploadStatus, 
-                `File uploaded successfully! <a href="${result.fileUrl}" target="_blank">View file</a>`, 
-                'success'
-            );
-            adminDom.uploadForm.reset();
-            adminDom.filePreview.classList.add('hidden');
-            await loadDocuments();
-        } else {
-            throw new Error(result.error || 'Upload failed');
-        }
-    } catch (error) {
-        showMessage(adminDom.uploadStatus, 
-            `Upload failed: ${error.message}`, 
-            'error'
-        );
-    } finally {
-        ADMIN.isUploading = false;
-        adminDom.uploadSubmit.innerHTML = originalText;
-        adminDom.uploadSubmit.disabled = false;
-    }
-}
-
-// ==================== UI FUNCTIONS ====================
-
-function showLogin() {
-    adminDom.loginScreen.classList.remove('hidden');
-    adminDom.dashboard.classList.add('hidden');
-    document.title = 'Admin Login - Intizar Library';
-}
-
-function showDashboard() {
-    adminDom.loginScreen.classList.add('hidden');
-    adminDom.dashboard.classList.remove('hidden');
-    document.title = 'Admin Dashboard - Intizar Library';
-}
-
-function switchTab(tabId) {
-    adminDom.tabs.forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.tab === tabId);
-    });
-    
-    adminDom.tabContents.forEach(content => {
-        content.classList.toggle('active', content.id === `tab-${tabId}`);
-    });
-    
-    if (tabId === 'manage') {
-        loadDocuments();
-    }
-}
-
-// ==================== UTILITY FUNCTIONS ====================
-
-function readFileAsBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.readAsDataURL(file);
-    });
+    // Update DOM elements if they exist
+    if (adminDom.statTotal) adminDom.statTotal.textContent = stats.total;
+    if (adminDom.statPdf) adminDom.statPdf.textContent = stats.pdf;
+    if (adminDom.statDocx) adminDom.statDocx.textContent = stats.docx;
+    if (adminDom.statGenerated) adminDom.statGenerated.textContent = stats.generated;
 }
 
 function escapeHtml(text) {
@@ -467,173 +530,127 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function showMessage(container, message, type = 'info') {
-    if (!container) return;
-    
-    container.innerHTML = '';
-    if (!message) return;
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `status-message status-${type}`;
-    messageDiv.innerHTML = message;
-    container.appendChild(messageDiv);
-    
-    if (type === 'success') {
-        setTimeout(() => messageDiv.remove(), 5000);
-    }
+// ==================== CSS FOR NOTIFICATIONS & LOADING ====================
+
+function addStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Loading spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(19, 97, 74, 0.3);
+            border-radius: 50%;
+            border-top-color: #13614a;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 0;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 10000;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+            max-width: 400px;
+            overflow: hidden;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification-content {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            gap: 12px;
+        }
+        
+        .notification-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        
+        .notification-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .notification-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .notification-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .notification i {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: inherit;
+            cursor: pointer;
+            margin-left: auto;
+            padding: 0 5px;
+        }
+        
+        /* Retry button */
+        .retry-btn {
+            background: #13614a;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .retry-btn:hover {
+            background: #0b3d2e;
+        }
+        
+        /* Disabled states */
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
-// ==================== EVENT LISTENERS ====================
+// Add styles when page loads
+addStyles();
 
-function initEventListeners() {
-    // Login form
-    if (adminDom.loginForm) {
-        adminDom.loginForm.addEventListener('submit', handleLogin);
-    }
-    
-    // Logout button
-    if (adminDom.logoutBtn) {
-        adminDom.logoutBtn.addEventListener('click', handleLogout);
-    }
-    
-    // Tabs
-    adminDom.tabs.forEach(tab => {
-        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-    });
-    
-    // File upload
-    if (adminDom.uploadForm) {
-        adminDom.uploadForm.addEventListener('submit', handleFileUpload);
-    }
-    
-    if (adminDom.uploadFile) {
-        adminDom.uploadFile.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                adminDom.filePreview.classList.remove('hidden');
-                adminDom.fileName.textContent = file.name;
-                adminDom.fileSize.textContent = formatFileSize(file.size);
-            }
-        });
-    }
-    
-    if (adminDom.uploadReset) {
-        adminDom.uploadReset.addEventListener('click', function() {
-            if (confirm('Clear form?')) {
-                adminDom.uploadForm.reset();
-                adminDom.filePreview.classList.add('hidden');
-            }
-        });
-    }
-    
-    // PDF generation
-    if (adminDom.generateForm) {
-        adminDom.generateForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!isValidSession()) {
-                showMessage(adminDom.generateStatus, 'Session expired. Please login again.', 'error');
-                showLogin();
-                return;
-            }
-            
-            const title = adminDom.generateTitle.value.trim();
-            const author = adminDom.generateAuthor.value.trim();
-            const content = adminDom.generateContent.value.trim();
-            
-            if (!title || !author || !content) {
-                showMessage(adminDom.generateStatus, 'Please fill all fields.', 'error');
-                return;
-            }
-            
-            // Show loading
-            ADMIN.isGenerating = true;
-            const originalText = adminDom.generateSubmit.innerHTML;
-            adminDom.generateSubmit.innerHTML = '<span class="loading"></span> Generating...';
-            adminDom.generateSubmit.disabled = true;
-            
-            try {
-                const payload = {
-                    action: 'generatePdf',
-                    token: ADMIN.token,
-                    formData: { title, author, body: content }
-                };
-                
-                const response = await fetch(ADMIN.backendUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showMessage(adminDom.generateStatus, 
-                        `PDF generated! <a href="${result.fileUrl}" target="_blank">View PDF</a>`, 
-                        'success'
-                    );
-                    adminDom.generateForm.reset();
-                    await loadDocuments();
-                } else {
-                    throw new Error(result.error || 'Generation failed');
-                }
-            } catch (error) {
-                showMessage(adminDom.generateStatus, 
-                    `PDF generation failed: ${error.message}`, 
-                    'error'
-                );
-            } finally {
-                ADMIN.isGenerating = false;
-                adminDom.generateSubmit.innerHTML = originalText;
-                adminDom.generateSubmit.disabled = false;
-            }
-        });
-    }
-    
-    if (adminDom.generatePreview) {
-        adminDom.generatePreview.addEventListener('click', function() {
-            const content = adminDom.generateContent.value;
-            if (content) {
-                const win = window.open('', '_blank');
-                win.document.write(`
-                    <html><body style="font-family: 'Times New Roman'; margin: 2cm;">
-                    <h1>Preview</h1>
-                    <div>${content.replace(/\n/g, '<br>')}</div>
-                    </body></html>
-                `);
-                win.document.close();
-            }
-        });
-    }
-    
-    // Document management
-    if (adminDom.refreshDocs) {
-        adminDom.refreshDocs.addEventListener('click', loadDocuments);
-    }
-    
-    if (adminDom.searchDocs) {
-        adminDom.searchDocs.addEventListener('input', function() {
-            // Simple search - you can enhance this
-            const searchTerm = this.value.toLowerCase();
-            const rows = adminDom.documentsList.querySelectorAll('tr');
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
-    }
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
-
-// ==================== DEBUG HELPER ====================
-
-// Add this to test if your script is loading
-console.log('auth.js loaded successfully');
-console.log('Backend URL:', ADMIN.backendUrl);
+// Make functions available globally for debugging
+window.ADMIN = ADMIN;
+window.handleLogin = handleLogin;
+window.handleLogout = handleLogout;
+window.loadDocuments = loadDocuments;
