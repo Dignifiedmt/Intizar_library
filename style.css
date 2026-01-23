@@ -1433,3 +1433,59 @@ footer {
     margin-top: 0.5rem;
     font-size: 0.9rem;
 }
+/* Error states */
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid #dc3545;
+    text-align: center;
+}
+
+.retry-btn {
+    background: #13614a;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.retry-btn:hover {
+    background: #0b3d2e;
+}
+
+.reset-btn {
+    background: #c99a6b;
+    color: #0b3d2e;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 15px;
+}
+
+.reset-btn:hover {
+    background: #d8b085;
+}
+
+/* Loading skeleton */
+.skeleton-card {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 8px;
+    height: 150px;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
