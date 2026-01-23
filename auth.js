@@ -6,7 +6,7 @@
 // Configuration - UPDATED WITH NEW URL!
 const ADMIN = {
     // ✅ UPDATED BACKEND URL
-    backendUrl: 'https://script.google.com/macros/s/AKfycbz2dF94BG1FTjuczsspNjLuwl0Sa0Qsew5mwsJ3f0_4gGEsk_FqbRiLXjiQhTgafTw6Ng/exec',
+    backendUrl: 'https://script.google.com/macros/s/AKfycby74jtjls0eiyJ86cJ_84MOsH0TBz90oswVd_ifWQYCKHlc6ohebPpPCRL8QB49E7hR1g/exec',
     
     // Session management
     token: localStorage.getItem('admin_token') || null,
@@ -1085,6 +1085,20 @@ function addStyles() {
     document.head.appendChild(style);
 }
 
+// Add this function to force refresh file permissions
+async function refreshAllPermissions() {
+    try {
+        const response = await fetch(`${ADMIN.backendUrl}?action=getDocuments`);
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('✅ All document permissions refreshed', 'success');
+            loadDocuments();
+        }
+    } catch (error) {
+        console.error('Error refreshing permissions:', error);
+    }
+}
 // Add styles when page loads
 addStyles();
 
