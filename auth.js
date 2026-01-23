@@ -1,6 +1,6 @@
 /**
  * Intizar Digital Library - Admin Authentication & Management
- * CORRECTED VERSION - Complete and working
+ * COMPLETE VERSION - With Upload and Generate PDF Support
  */
 
 // Configuration - MUST UPDATE WITH YOUR URL!
@@ -65,11 +65,26 @@ function loadElements() {
     adminDom.statGenerated = document.getElementById('stat-generated');
     adminDom.dashboardStatus = document.getElementById('dashboard-status');
     
-    // Form elements
+    // Upload form elements
     adminDom.uploadForm = document.getElementById('upload-form');
+    adminDom.uploadTitle = document.getElementById('upload-title');
+    adminDom.uploadAuthor = document.getElementById('upload-author');
+    adminDom.uploadFile = document.getElementById('upload-file');
+    adminDom.uploadSubmit = document.getElementById('upload-submit');
+    adminDom.uploadStatus = document.getElementById('upload-status');
+    
+    // Generate PDF form elements
     adminDom.generateForm = document.getElementById('generate-form');
+    adminDom.generateTitle = document.getElementById('generate-title');
+    adminDom.generateAuthor = document.getElementById('generate-author');
+    adminDom.generateContent = document.getElementById('generate-content');
+    adminDom.generateSubmit = document.getElementById('generate-submit');
+    adminDom.generateStatus = document.getElementById('generate-status');
+    
+    // Manage documents elements
     adminDom.documentsList = document.getElementById('documents-list');
     adminDom.searchDocs = document.getElementById('search-docs');
+    adminDom.manageStatus = document.getElementById('manage-status');
     
     console.log('Elements loaded successfully');
 }
@@ -118,7 +133,7 @@ function clearSession() {
     console.log('Session cleared');
 }
 
-// ==================== FIXED LOGIN FUNCTION ====================
+// ==================== LOGIN FUNCTION ====================
 
 async function handleLogin(event) {
     event.preventDefault();
@@ -210,6 +225,219 @@ async function handleLogin(event) {
     } finally {
         // Hide loading state
         showLoading(false, 'login');
+    }
+}
+
+// ==================== UPLOAD DOCUMENT FUNCTION ====================
+
+async function handleUpload(event) {
+    event.preventDefault();
+    
+    if (!checkSession()) {
+        showNotification('Session expired. Please login again.', 'error');
+        return;
+    }
+    
+    if (ADMIN.isUploading) {
+        showNotification('Upload in progress...', 'info');
+        return;
+    }
+    
+    const title = adminDom.uploadTitle?.value?.trim() || '';
+    const author = adminDom.uploadAuthor?.value?.trim() || '';
+    const file = adminDom.uploadFile?.files[0];
+    
+    // Validation
+    if (!title || !author || !file) {
+        showNotification('Please fill all fields and select a file', 'error');
+        return;
+    }
+    
+    // Check file type
+    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(file.type)) {
+        showNotification('Only PDF and DOCX files are allowed', 'error');
+        return;
+    }
+    
+    // Check file size (20MB max)
+    if (file.size > 20 * 1024 * 1024) {
+        showNotification('File size must be less than 20MB', 'error');
+        return;
+    }
+    
+    ADMIN.isUploading = true;
+    adminDom.uploadSubmit.disabled = true;
+    adminDom.uploadSubmit.innerHTML = '<span class="loading-spinner"></span> Uploading...';
+    
+    try {
+        console.log('📤 Uploading file:', file.name);
+        
+        // Convert file to base64
+        const base64 = await fileToBase64(file);
+        
+        // Prepare upload data
+        const uploadData = {
+            action: 'upload',
+            token: ADMIN.token,
+            fileName: file.name,
+            mimeType: file.type,
+            fileBase64: base64.split(',')[1], // Remove data URL prefix
+            metadata: {
+                title: title,
+                author: author
+            }
+        };
+        
+        console.log('Sending upload request...');
+        
+        const response = await fetch(ADMIN.backendUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(uploadData)
+        });
+        
+        const result = await response.json();
+        console.log('📥 Upload response:', result);
+        
+        if (result.success) {
+            showNotification('✅ Document uploaded successfully!', 'success');
+            
+            // Clear form
+            adminDom.uploadForm.reset();
+            document.getElementById('file-preview').classList.add('hidden');
+            
+            // Reload documents
+            await loadDocuments();
+            
+            // Show success in status div
+            if (adminDom.uploadStatus) {
+                adminDom.uploadStatus.innerHTML = `
+                    <div class="status-message status-success">
+                        <i class="fas fa-check-circle"></i>
+                        Document uploaded successfully! <a href="${result.fileUrl}" target="_blank">View File</a>
+                    </div>
+                `;
+            }
+        } else {
+            throw new Error(result.error || 'Upload failed');
+        }
+        
+    } catch (error) {
+        console.error('❌ Upload failed:', error);
+        showNotification('Upload failed: ' + error.message, 'error');
+        
+        if (adminDom.uploadStatus) {
+            adminDom.uploadStatus.innerHTML = `
+                <div class="status-message status-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Upload failed: ${error.message}
+                </div>
+            `;
+        }
+    } finally {
+        ADMIN.isUploading = false;
+        adminDom.uploadSubmit.disabled = false;
+        adminDom.uploadSubmit.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Upload to Library';
+    }
+}
+
+// ==================== GENERATE PDF FUNCTION ====================
+
+async function handleGeneratePDF(event) {
+    event.preventDefault();
+    
+    if (!checkSession()) {
+        showNotification('Session expired. Please login again.', 'error');
+        return;
+    }
+    
+    if (ADMIN.isGenerating) {
+        showNotification('PDF generation in progress...', 'info');
+        return;
+    }
+    
+    const title = adminDom.generateTitle?.value?.trim() || '';
+    const author = adminDom.generateAuthor?.value?.trim() || '';
+    const content = adminDom.generateContent?.value?.trim() || '';
+    
+    // Validation
+    if (!title || !author || !content) {
+        showNotification('Please fill all fields', 'error');
+        return;
+    }
+    
+    ADMIN.isGenerating = true;
+    adminDom.generateSubmit.disabled = true;
+    adminDom.generateSubmit.innerHTML = '<span class="loading-spinner"></span> Generating PDF...';
+    
+    try {
+        console.log('📄 Generating PDF:', title);
+        
+        // Prepare generate data
+        const generateData = {
+            action: 'generatePdf',
+            token: ADMIN.token,
+            formData: {
+                title: title,
+                author: author,
+                body: content
+            }
+        };
+        
+        console.log('Sending generate request...');
+        
+        const response = await fetch(ADMIN.backendUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(generateData)
+        });
+        
+        const result = await response.json();
+        console.log('📥 Generate PDF response:', result);
+        
+        if (result.success) {
+            showNotification('✅ PDF generated successfully!', 'success');
+            
+            // Clear form
+            adminDom.generateForm.reset();
+            
+            // Reload documents
+            await loadDocuments();
+            
+            // Show success in status div
+            if (adminDom.generateStatus) {
+                adminDom.generateStatus.innerHTML = `
+                    <div class="status-message status-success">
+                        <i class="fas fa-check-circle"></i>
+                        PDF generated successfully! <a href="${result.fileUrl}" target="_blank">View PDF</a>
+                    </div>
+                `;
+            }
+        } else {
+            throw new Error(result.error || 'PDF generation failed');
+        }
+        
+    } catch (error) {
+        console.error('❌ PDF generation failed:', error);
+        showNotification('PDF generation failed: ' + error.message, 'error');
+        
+        if (adminDom.generateStatus) {
+            adminDom.generateStatus.innerHTML = `
+                <div class="status-message status-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    PDF generation failed: ${error.message}
+                </div>
+            `;
+        }
+    } finally {
+        ADMIN.isGenerating = false;
+        adminDom.generateSubmit.disabled = false;
+        adminDom.generateSubmit.innerHTML = '<i class="fas fa-magic"></i> Generate & Save PDF';
     }
 }
 
@@ -341,6 +569,69 @@ function updateStats() {
     if (adminDom.statPdf) adminDom.statPdf.textContent = '0';
     if (adminDom.statDocx) adminDom.statDocx.textContent = '0';
     if (adminDom.statGenerated) adminDom.statGenerated.textContent = '0';
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
+function renderDocuments(documents) {
+    if (!adminDom.documentsList) return;
+    
+    if (!documents || documents.length === 0) {
+        adminDom.documentsList.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 3rem;">
+                    <i class="fas fa-inbox"></i>
+                    <p>No documents found</p>
+                    <p style="font-size: 0.9rem;">Upload your first document to get started</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    documents.forEach(doc => {
+        const date = new Date(doc.DateAdded).toLocaleDateString();
+        const typeClass = doc.Type === 'PDF' ? 'doc-type-pdf' :
+                         doc.Type === 'DOCX' ? 'doc-type-docx' :
+                         'doc-type-generated';
+        
+        html += `
+            <tr>
+                <td><strong>${escapeHtml(doc.Title || 'Untitled')}</strong></td>
+                <td>${escapeHtml(doc.Author || 'Unknown')}</td>
+                <td><span class="doc-type-badge ${typeClass}">${doc.Type}</span></td>
+                <td>${date}</td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="${doc.DriveUrl}" target="_blank" class="action-btn view">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="${doc.DriveUrl}" download class="action-btn download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    adminDom.documentsList.innerHTML = html;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // ==================== UI MANAGEMENT ====================
@@ -487,6 +778,18 @@ function initEventListeners() {
         adminDom.logoutBtn.addEventListener('click', handleLogout);
     }
     
+    // Upload form
+    if (adminDom.uploadForm) {
+        console.log('Upload form found, adding listener');
+        adminDom.uploadForm.addEventListener('submit', handleUpload);
+    }
+    
+    // Generate PDF form
+    if (adminDom.generateForm) {
+        console.log('Generate PDF form found, adding listener');
+        adminDom.generateForm.addEventListener('submit', handleGeneratePDF);
+    }
+    
     // Tabs
     const tabs = document.querySelectorAll('.tab-btn');
     tabs.forEach(tab => {
@@ -511,6 +814,8 @@ function initEventListeners() {
         uploadResetBtn.addEventListener('click', () => {
             if (adminDom.uploadForm) {
                 adminDom.uploadForm.reset();
+                document.getElementById('file-preview').classList.add('hidden');
+                if (adminDom.uploadStatus) adminDom.uploadStatus.innerHTML = '';
                 showNotification('Form cleared', 'info');
             }
         });
@@ -535,11 +840,57 @@ function initEventListeners() {
         });
     }
     
+    // Preview formatting button
+    const previewBtn = document.getElementById('generate-preview');
+    if (previewBtn) {
+        previewBtn.addEventListener('click', function() {
+            const content = adminDom.generateContent?.value;
+            if (content) {
+                showNotification('Opening preview...', 'info');
+                // Simple preview - you can enhance this
+                const preview = window.open('', '_blank');
+                preview.document.write(`
+                    <html>
+                    <head>
+                        <title>Preview - PDF Generation</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+                            h1 { color: #0b3d2e; }
+                            .meta { color: #666; font-style: italic; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${escapeHtml(adminDom.generateTitle?.value || 'Untitled')}</h1>
+                        <div class="meta">Author: ${escapeHtml(adminDom.generateAuthor?.value || 'Unknown')}</div>
+                        <hr>
+                        <div>${content.replace(/\n/g, '<br>')}</div>
+                    </body>
+                    </html>
+                `);
+            } else {
+                showNotification('Please enter content to preview', 'warning');
+            }
+        });
+    }
+    
+    // Search documents
+    if (adminDom.searchDocs) {
+        adminDom.searchDocs.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#documents-list tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+    
     // Add keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         // Escape key to cancel/focus
         if (e.key === 'Escape') {
-            if (ADMIN.isLoading) {
+            if (ADMIN.isLoading || ADMIN.isUploading || ADMIN.isGenerating) {
                 showNotification('Operation cancelled', 'warning');
             }
         }
@@ -554,60 +905,6 @@ function initEventListeners() {
     });
     
     console.log('Event listeners initialized');
-}
-
-// ==================== UTILITY FUNCTIONS ====================
-
-function renderDocuments(documents) {
-    if (!adminDom.documentsList) return;
-    
-    if (!documents || documents.length === 0) {
-        adminDom.documentsList.innerHTML = `
-            <tr>
-                <td colspan="5" style="text-align: center; padding: 3rem;">
-                    <i class="fas fa-inbox"></i>
-                    <p>No documents found</p>
-                    <p style="font-size: 0.9rem;">Upload your first document to get started</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    let html = '';
-    documents.forEach(doc => {
-        const date = new Date(doc.DateAdded).toLocaleDateString();
-        const typeClass = doc.Type === 'PDF' ? 'doc-type-pdf' :
-                         doc.Type === 'DOCX' ? 'doc-type-docx' :
-                         'doc-type-generated';
-        
-        html += `
-            <tr>
-                <td><strong>${escapeHtml(doc.Title || 'Untitled')}</strong></td>
-                <td>${escapeHtml(doc.Author || 'Unknown')}</td>
-                <td><span class="doc-type-badge ${typeClass}">${doc.Type}</span></td>
-                <td>${date}</td>
-                <td>
-                    <div class="action-buttons">
-                        <a href="${doc.DriveUrl}" target="_blank" class="action-btn view">
-                            <i class="fas fa-eye"></i> View
-                        </a>
-                        <a href="${doc.DriveUrl}" download class="action-btn download">
-                            <i class="fas fa-download"></i>
-                        </a>
-                    </div>
-                </td>
-            </tr>
-        `;
-    });
-    
-    adminDom.documentsList.innerHTML = html;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // ==================== CSS FOR NOTIFICATIONS & LOADING ====================
@@ -760,6 +1057,34 @@ function addStyles() {
             transform: translateY(-2px);
             box-shadow: 0 3px 10px rgba(0,0,0,0.1);
         }
+        
+        /* Status messages */
+        .status-message {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -772,3 +1097,5 @@ window.ADMIN = ADMIN;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.loadDocuments = loadDocuments;
+window.handleUpload = handleUpload;
+window.handleGeneratePDF = handleGeneratePDF;
