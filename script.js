@@ -1,6 +1,6 @@
 // Intizar Digital Library - Enhanced Frontend Logic
 const APP = {
-    backendUrl: 'https://script.google.com/macros/s/AKfycbyDUgcyanIUUJdNODU2QeM11-RMCCCaR3fEPUI7rfIq0SXR6oDTzSEKz5mHOXEawga41Q/exec',
+    backendUrl: 'https://script.google.com/macros/s/AKfycbwATEQoKm4GQyPTDcSy1jF-CWrEEYrW9OBDmOWjL2nubKfLiAjWLPOWRu2OzAkusQXjNw/exec',
     defaultDocs: [
         { 
             id: 'default-1',
