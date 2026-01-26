@@ -1,6 +1,6 @@
 // Intizar Digital Library - Enhanced Frontend Logic
 const APP = {
-    backendUrl: 'https://script.google.com/macros/s/AKfycbywmNTPKOjga_QSotte4uxgbkF5Og1qsxitai9Xs0qpjabdaoP5DP2PWcw5v05uKPkJ2A/exec',
+    backendUrl: 'https://script.google.com/macros/s/AKfycbz2dF94BG1FTjuczsspNjLuwl0Sa0Qsew5mwsJ3f0_4gGEsk_FqbRiLXjiQhTgafTw6Ng/exec',
     defaultDocs: [
         { 
             id: 'default-1',
@@ -8,8 +8,7 @@ const APP = {
             author: 'Intizar Research Team', 
             type: 'PDF', 
             date: 'Core Collection',
-            viewUrl: 'intizar1.pdf',
-            downloadUrl: 'intizar1.pdf',
+            url: 'intizar1.pdf',
             description: 'A comprehensive introduction to the concept of Mahdawiyyah and its significance.'
         },
         { 
@@ -18,8 +17,7 @@ const APP = {
             author: 'Intizar Research Team', 
             type: 'PDF', 
             date: 'Core Collection',
-            viewUrl: 'intizar2.pdf',
-            downloadUrl: 'intizar2.pdf',
+            url: 'intizar2.pdf',
             description: 'Exploring the theological and practical aspects of awaiting Imam Mahdi (AJF).'
         },
         { 
@@ -28,8 +26,7 @@ const APP = {
             author: 'Intizar Research Team', 
             type: 'PDF', 
             date: 'Core Collection',
-            viewUrl: 'intizar3.pdf',
-            downloadUrl: 'intizar3.pdf',
+            url: 'intizar3.pdf',
             description: 'References and analysis from classical Islamic literature.'
         },
         { 
@@ -38,8 +35,7 @@ const APP = {
             author: 'Intizar Research Team', 
             type: 'PDF', 
             date: 'Core Collection',
-            viewUrl: 'intizar4.pdf',
-            downloadUrl: 'intizar4.pdf',
+            url: 'intizar4.pdf',
             description: 'Contemporary perspectives on Mahdawiyyah.'
         },
         { 
@@ -48,8 +44,7 @@ const APP = {
             author: 'Intizar Research Team', 
             type: 'PDF', 
             date: 'Core Collection',
-            viewUrl: 'intizar5.pdf',
-            downloadUrl: 'intizar5.pdf',
+            url: 'intizar5.pdf',
             description: 'Frequently asked questions and answers.'
         }
     ],
@@ -197,8 +192,7 @@ async function loadFeaturedDocuments() {
                     month: 'short', 
                     day: 'numeric' 
                 }),
-                viewUrl: doc.viewUrl || '#',
-                downloadUrl: doc.downloadUrl || '#',
+                url: doc.DriveUrl || '#',
                 isRemote: true
             }));
         }
@@ -235,12 +229,8 @@ function renderFeaturedDocuments(docs) {
                     ${doc.description ? `<p class="doc-description">${doc.description}</p>` : ''}
                 </div>
                 <div class="doc-actions">
-                    <a href="${doc.viewUrl}" target="_blank" class="doc-btn">
-                        <i class="fas fa-eye"></i> Read
-                    </a>
-                    <a href="${doc.downloadUrl}" class="doc-btn secondary" download>
-                        <i class="fas fa-download"></i> Download
-                    </a>
+                    <a href="${doc.url}" target="_blank" class="doc-btn">View Document</a>
+                    <a href="${doc.url}" download class="doc-btn secondary">Download</a>
                 </div>
             `;
             dom.featuredDocuments.appendChild(card);
@@ -260,12 +250,8 @@ function renderFeaturedDocuments(docs) {
                 ${doc.description ? `<p class="doc-description">${doc.description}</p>` : ''}
             </div>
             <div class="doc-actions">
-                <a href="${doc.viewUrl}" target="_blank" class="doc-btn">
-                    <i class="fas fa-eye"></i> Read
-                </a>
-                <a href="${doc.downloadUrl}" class="doc-btn secondary" download>
-                    <i class="fas fa-download"></i> Download
-                </a>
+                <a href="${doc.url}" target="_blank" class="doc-btn">View Document</a>
+                <a href="${doc.url}" download class="doc-btn secondary">Download</a>
             </div>
         `;
         dom.featuredDocuments.appendChild(card);
@@ -310,8 +296,7 @@ async function loadLibraryDocuments() {
                     month: 'short', 
                     day: 'numeric' 
                 }),
-                viewUrl: doc.viewUrl || '#',
-                downloadUrl: doc.downloadUrl || '#',
+                url: doc.DriveUrl || '#',
                 description: doc.Description || '',
                 isRemote: true,
                 isRecent: isRecentDocument(doc.DateAdded)
@@ -473,10 +458,10 @@ function renderLibraryDocuments(docs) {
                 ${doc.description ? `<p class="doc-description">${doc.description}</p>` : ''}
             </div>
             <div class="doc-actions">
-                <a href="${doc.viewUrl}" target="_blank" class="doc-btn">
-                    <i class="fas fa-eye"></i> Read
+                <a href="${doc.url}" target="_blank" class="doc-btn">
+                    <i class="fas fa-eye"></i> View
                 </a>
-                <a href="${doc.downloadUrl}" class="doc-btn secondary" download>
+                <a href="${doc.url}" download class="doc-btn secondary">
                     <i class="fas fa-download"></i> Download
                 </a>
             </div>
@@ -631,8 +616,6 @@ async function checkBackendHealth() {
         if (!data.success) {
             console.warn('⚠️ Backend health check failed:', data);
             showNotification('Backend service is experiencing issues', 'warning');
-        } else {
-            console.log('✅ Backend is healthy:', data);
         }
     } catch (error) {
         console.warn('⚠️ Backend health check failed:', error.message);
@@ -703,26 +686,21 @@ function initEventListeners() {
     });
     
     // Hamburger Menu
-    if (dom.hamburger) {
-        dom.hamburger.addEventListener('click', toggleMobileMenu);
-    }
-    
-    if (dom.closeMenu) {
-        dom.closeMenu.addEventListener('click', closeMobileMenu);
-    }
+    dom.hamburger.addEventListener('click', toggleMobileMenu);
+    dom.closeMenu.addEventListener('click', closeMobileMenu);
     
     // Close mobile menu when clicking outside
     document.addEventListener('click', (e) => {
-        if (dom.mobileNav && dom.mobileNav.classList.contains('active') && 
+        if (dom.mobileNav.classList.contains('active') && 
             !dom.mobileNav.contains(e.target) && 
-            dom.hamburger && !dom.hamburger.contains(e.target)) {
+            !dom.hamburger.contains(e.target)) {
             closeMobileMenu();
         }
     });
     
     // Close mobile menu on Escape key
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && dom.mobileNav && dom.mobileNav.classList.contains('active')) {
+        if (e.key === 'Escape' && dom.mobileNav.classList.contains('active')) {
             closeMobileMenu();
         }
     });
@@ -758,33 +736,20 @@ function initEventListeners() {
     }
     
     // AI Modal
-    if (dom.aiButton) {
-        dom.aiButton.addEventListener('click', openAIModal);
-    }
-    
-    if (dom.closeAI) {
-        dom.closeAI.addEventListener('click', closeAIModal);
-    }
-    
-    if (dom.aiModal) {
-        dom.aiModal.addEventListener('click', (e) => {
-            if (e.target === dom.aiModal) closeAIModal();
-        });
-    }
+    dom.aiButton.addEventListener('click', openAIModal);
+    dom.closeAI.addEventListener('click', closeAIModal);
+    dom.aiModal.addEventListener('click', (e) => {
+        if (e.target === dom.aiModal) closeAIModal();
+    });
     
     // AI Chat
-    if (dom.sendAI) {
-        dom.sendAI.addEventListener('click', sendAIQuestion);
-    }
-    
-    if (dom.userInput) {
-        dom.userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendAIQuestion();
-            }
-        });
-    }
+    dom.sendAI.addEventListener('click', sendAIQuestion);
+    dom.userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendAIQuestion();
+        }
+    });
     
     // Clear chat button
     if (dom.clearChat) {
@@ -793,7 +758,7 @@ function initEventListeners() {
     
     // Close modal with Escape key
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && dom.aiModal && !dom.aiModal.classList.contains('hidden')) {
+        if (e.key === 'Escape' && !dom.aiModal.classList.contains('hidden')) {
             closeAIModal();
         }
     });
@@ -819,7 +784,6 @@ function initEventListeners() {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('📚 Intizar Digital Library initializing...');
-    console.log('🌐 Backend URL:', APP.backendUrl);
     
     try {
         initEventListeners();
@@ -1063,33 +1027,6 @@ function addDynamicStyles() {
                 opacity: 1;
             }
         }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .document-card .doc-actions {
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .document-card .doc-actions .doc-btn {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .notification {
-                min-width: 250px;
-                max-width: 90%;
-                right: 10px;
-                left: 10px;
-            }
-        }
     `;
     document.head.appendChild(styles);
 }
-
-// Export functions to global scope for HTML onclick handlers
-window.switchPage = switchPage;
-window.openAIModal = openAIModal;
-window.closeAIModal = closeAIModal;
-window.resetFilters = resetFilters;
-window.loadLibraryDocuments = loadLibraryDocuments;
