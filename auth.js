@@ -1,12 +1,12 @@
 /**
  * Intizar Digital Library - Admin Authentication & Management
- * UPDATED VERSION - Using application/x-www-form-urlencoded format
+ * UPDATED VERSION - Using new backend URL and updated document URLs
  */
 
 // Configuration - UPDATED WITH NEW URL!
 const ADMIN = {
     // ✅ UPDATED BACKEND URL
-    backendUrl: 'https://script.google.com/macros/s/AKfycbwmvPCggWbfQ4odqiRT7SlMAqtNJGfPS5e138vSc2_WJd4wdtpUZlWmZn0hEUN3SIP2ZA/exec',
+    backendUrl: 'https://script.google.com/macros/s/AKfycbywmNTPKOjga_QSotte4uxgbkF5Og1qsxitai9Xs0qpjabdaoP5DP2PWcw5v05uKPkJ2A/exec',
     
     // Session management
     token: localStorage.getItem('admin_token') || null,
@@ -26,6 +26,9 @@ const adminDom = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Admin panel initializing...');
+    
+    // Add dynamic styles
+    addStyles();
     
     // Load elements
     loadElements();
@@ -171,7 +174,7 @@ async function handleLogin(event) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: formData
+            body: formData.toString()
         });
         
         // Check if response is okay
@@ -276,25 +279,29 @@ async function handleUpload(event) {
         // Convert file to base64
         const base64 = await fileToBase64(file);
         
-        // ✅ UPDATED: Prepare form data using URLSearchParams (not JSON)
-        const formData = new URLSearchParams();
+        // Prepare form data
+        const formData = new FormData();
         formData.append('action', 'upload');
         formData.append('token', ADMIN.token);
-        formData.append('fileName', file.name);
-        formData.append('mimeType', file.type);
-        formData.append('fileBase64', base64.split(',')[1]); // Remove data URL prefix
-        formData.append('title', title);
-        formData.append('author', author);
         
-        console.log('Sending upload request (form-urlencoded)...');
+        // Create JSON payload for upload
+        const uploadData = {
+            token: ADMIN.token,
+            fileName: file.name,
+            mimeType: file.type,
+            fileBase64: base64.split(',')[1], // Remove data URL prefix
+            metadata: {
+                title: title,
+                author: author
+            }
+        };
         
-        // ✅ UPDATED: Send as application/x-www-form-urlencoded
+        console.log('Sending upload request (JSON payload)...');
+        
+        // Send as multipart/form-data with JSON payload
         const response = await fetch(ADMIN.backendUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: formData
+            body: JSON.stringify(uploadData)
         });
         
         const result = await response.json();
@@ -305,17 +312,31 @@ async function handleUpload(event) {
             
             // Clear form
             adminDom.uploadForm.reset();
-            document.getElementById('file-preview').classList.add('hidden');
+            const filePreview = document.getElementById('file-preview');
+            if (filePreview) filePreview.classList.add('hidden');
             
             // Reload documents
             await loadDocuments();
             
             // Show success in status div
             if (adminDom.uploadStatus) {
+                const viewUrl = `${ADMIN.backendUrl}?action=view&fileId=${result.fileId}`;
+                const downloadUrl = `${ADMIN.backendUrl}?action=download&fileId=${result.fileId}`;
+                
                 adminDom.uploadStatus.innerHTML = `
                     <div class="status-message status-success">
                         <i class="fas fa-check-circle"></i>
-                        Document uploaded successfully! <a href="${result.fileUrl}" target="_blank">View File</a>
+                        <div>
+                            Document uploaded successfully!
+                            <div class="action-links">
+                                <a href="${viewUrl}" target="_blank" class="action-btn view">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="${downloadUrl}" class="action-btn download">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 `;
             }
@@ -374,23 +395,27 @@ async function handleGeneratePDF(event) {
     try {
         console.log('📄 Generating PDF:', title);
         
-        // ✅ UPDATED: Prepare form data using URLSearchParams (not JSON)
-        const formData = new URLSearchParams();
+        // Prepare form data
+        const formData = new FormData();
         formData.append('action', 'generatePdf');
         formData.append('token', ADMIN.token);
-        formData.append('title', title);
-        formData.append('author', author);
-        formData.append('content', content);
         
-        console.log('Sending generate request (form-urlencoded)...');
+        // Create JSON payload for PDF generation
+        const pdfData = {
+            token: ADMIN.token,
+            formData: {
+                title: title,
+                author: author,
+                body: content
+            }
+        };
         
-        // ✅ UPDATED: Send as application/x-www-form-urlencoded
+        console.log('Sending generate request (JSON payload)...');
+        
+        // Send as multipart/form-data with JSON payload
         const response = await fetch(ADMIN.backendUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: formData
+            body: JSON.stringify(pdfData)
         });
         
         const result = await response.json();
@@ -407,10 +432,23 @@ async function handleGeneratePDF(event) {
             
             // Show success in status div
             if (adminDom.generateStatus) {
+                const viewUrl = `${ADMIN.backendUrl}?action=view&fileId=${result.fileId}`;
+                const downloadUrl = `${ADMIN.backendUrl}?action=download&fileId=${result.fileId}`;
+                
                 adminDom.generateStatus.innerHTML = `
                     <div class="status-message status-success">
                         <i class="fas fa-check-circle"></i>
-                        PDF generated successfully! <a href="${result.fileUrl}" target="_blank">View PDF</a>
+                        <div>
+                            PDF generated successfully!
+                            <div class="action-links">
+                                <a href="${viewUrl}" target="_blank" class="action-btn view">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="${downloadUrl}" class="action-btn download">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 `;
             }
@@ -546,7 +584,7 @@ function updateStatsFromDocuments(documents) {
     
     const stats = {
         total: documents.length,
-        pdf: documents.filter(doc => doc.Type === 'PDF').length,
+        pdf: documents.filter(doc => doc.Type === 'PDF' || doc.Type === 'Generated PDF').length,
         docx: documents.filter(doc => doc.Type === 'DOCX').length,
         generated: documents.filter(doc => doc.Type === 'Generated PDF').length
     };
@@ -596,10 +634,17 @@ function renderDocuments(documents) {
     
     let html = '';
     documents.forEach(doc => {
-        const date = new Date(doc.DateAdded).toLocaleDateString();
-        const typeClass = doc.Type === 'PDF' ? 'doc-type-pdf' :
-                         doc.Type === 'DOCX' ? 'doc-type-docx' :
-                         'doc-type-generated';
+        const date = new Date(doc.DateAdded).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+        const typeClass = doc.Type === 'PDF' || doc.Type === 'Generated PDF' ? 'doc-type-pdf' :
+                         doc.Type === 'DOCX' ? 'doc-type-docx' : 'doc-type-other';
+        
+        // Use viewUrl and downloadUrl from backend response
+        const viewUrl = doc.viewUrl || `${ADMIN.backendUrl}?action=view&fileId=${doc.DriveFileId}`;
+        const downloadUrl = doc.downloadUrl || `${ADMIN.backendUrl}?action=download&fileId=${doc.DriveFileId}`;
         
         html += `
             <tr>
@@ -609,11 +654,11 @@ function renderDocuments(documents) {
                 <td>${date}</td>
                 <td>
                     <div class="action-buttons">
-                        <a href="${doc.DriveUrl}" target="_blank" class="action-btn view">
+                        <a href="${viewUrl}" target="_blank" class="action-btn view">
                             <i class="fas fa-eye"></i> View
                         </a>
-                        <a href="${doc.DriveUrl}" download class="action-btn download">
-                            <i class="fas fa-download"></i>
+                        <a href="${downloadUrl}" download class="action-btn download">
+                            <i class="fas fa-download"></i> Download
                         </a>
                     </div>
                 </td>
@@ -810,7 +855,8 @@ function initEventListeners() {
         uploadResetBtn.addEventListener('click', () => {
             if (adminDom.uploadForm) {
                 adminDom.uploadForm.reset();
-                document.getElementById('file-preview').classList.add('hidden');
+                const filePreview = document.getElementById('file-preview');
+                if (filePreview) filePreview.classList.add('hidden');
                 if (adminDom.uploadStatus) adminDom.uploadStatus.innerHTML = '';
                 showNotification('Form cleared', 'info');
             }
@@ -1026,13 +1072,18 @@ function addStyles() {
         }
         
         /* Action buttons in table */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
         .action-btn {
             padding: 6px 12px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.85rem;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 5px;
             transition: all 0.3s;
@@ -1054,13 +1105,20 @@ function addStyles() {
             box-shadow: 0 3px 10px rgba(0,0,0,0.1);
         }
         
+        /* Action links in status messages */
+        .action-links {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
         /* Status messages */
         .status-message {
             padding: 1rem;
             border-radius: 6px;
             margin: 1rem 0;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 10px;
         }
         
@@ -1081,26 +1139,32 @@ function addStyles() {
             color: #0c5460;
             border-left: 4px solid #17a2b8;
         }
+        
+        /* Document type badges */
+        .doc-type-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .doc-type-pdf {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .doc-type-docx {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .doc-type-generated {
+            background: #d4edda;
+            color: #155724;
+        }
     `;
     document.head.appendChild(style);
 }
-
-// Add this function to force refresh file permissions
-async function refreshAllPermissions() {
-    try {
-        const response = await fetch(`${ADMIN.backendUrl}?action=getDocuments`);
-        const result = await response.json();
-        
-        if (result.success) {
-            showNotification('✅ All document permissions refreshed', 'success');
-            loadDocuments();
-        }
-    } catch (error) {
-        console.error('Error refreshing permissions:', error);
-    }
-}
-// Add styles when page loads
-addStyles();
 
 // Make functions available globally for debugging
 window.ADMIN = ADMIN;
@@ -1109,3 +1173,4 @@ window.handleLogout = handleLogout;
 window.loadDocuments = loadDocuments;
 window.handleUpload = handleUpload;
 window.handleGeneratePDF = handleGeneratePDF;
+window.switchTab = switchTab;
